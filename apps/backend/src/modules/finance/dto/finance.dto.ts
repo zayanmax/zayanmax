@@ -11,6 +11,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PartialType } from '@nestjs/mapped-types';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import {
   ExpenseClaimStatusDto,
@@ -53,6 +54,8 @@ export class CreateVendorDto {
   @IsString()
   address?: string;
 }
+
+export class UpdateVendorDto extends PartialType(CreateVendorDto) {}
 
 export class VendorQueryDto extends PaginationQueryDto {}
 
@@ -117,6 +120,8 @@ export class CreateExpenseClaimDto {
   @Type(() => ExpenseAttachmentDto)
   attachments?: ExpenseAttachmentDto[];
 }
+
+export class UpdateExpenseClaimDto extends PartialType(CreateExpenseClaimDto) {}
 
 export class ExpenseClaimQueryDto extends PaginationQueryDto {
   @IsOptional()
@@ -187,6 +192,8 @@ export class CreateVendorBillDto {
   @Type(() => VendorBillItemDto)
   items!: VendorBillItemDto[];
 }
+
+export class UpdateVendorBillDto extends PartialType(CreateVendorBillDto) {}
 
 export class VendorBillQueryDto extends PaginationQueryDto {
   @IsOptional()

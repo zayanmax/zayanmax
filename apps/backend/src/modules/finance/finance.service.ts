@@ -17,7 +17,11 @@ import {
   ExpenseClaimQueryDto,
   FinanceListQueryDto,
   PettyCashTransactionQueryDto,
+  UpdateExpenseClaimDto,
+  UpdateVendorBillDto,
+  UpdateVendorDto,
   VendorBillQueryDto,
+  VendorBillItemDto,
   VendorPaymentQueryDto,
   VendorQueryDto,
 } from './dto/finance.dto';
@@ -150,6 +154,63 @@ export class FinanceService {
     return this.paginated(data, page, limit, total);
   }
 
+  async findVendor(companyId: string, id: string) {
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: {
+        bills: {
+          where: { deletedAt: null },
+          include: { items: true },
+          orderBy: { billDate: 'desc' },
+        },
+        payments: {
+          where: { deletedAt: null },
+          orderBy: { paymentDate: 'desc' },
+        },
+      },
+    });
+    if (!vendor) throw new NotFoundException('Vendor not found');
+    return vendor;
+  }
+
+  async updateVendor(
+    companyId: string,
+    id: string,
+    actorId: string,
+    dto: UpdateVendorDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const oldValue = await this.prisma.vendor.findFirst({
+      where: { id, companyId, deletedAt: null },
+    });
+    if (!oldValue) throw new NotFoundException('Vendor not found');
+    await this.ensureNoDuplicateVendor(companyId, dto, id);
+    const vendor = await this.prisma.vendor.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        email: dto.email ? this.normalizeEmail(dto.email) : undefined,
+        phone: dto.phone,
+        gstin: dto.gstin ? dto.gstin.toUpperCase() : undefined,
+        address: dto.address,
+        updatedById: actorId,
+      },
+    });
+    await this.audit(
+      companyId,
+      actorId,
+      'finance.vendors.update',
+      'Vendor',
+      id,
+      oldValue,
+      vendor,
+      ipAddress,
+      userAgent,
+    );
+    return vendor;
+  }
+
   async createExpenseClaim(
     companyId: string,
     actorId: string,
@@ -243,11 +304,121 @@ export class FinanceService {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { [query.sortBy ?? 'createdAt']: query.sortOrder ?? 'desc' },
-        include: { items: true, attachments: true },
+        include: {
+          employee: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              employeeCode: true,
+              email: true,
+            },
+          },
+          items: { include: { expenseCategory: true } },
+          attachments: true,
+        },
       }),
       this.prisma.expenseClaim.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findExpenseClaim(companyId: string, id: string) {
+    const claim = await this.prisma.expenseClaim.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeCode: true,
+            email: true,
+          },
+        },
+        items: {
+          include: { expenseCategory: true },
+          orderBy: { expenseDate: 'asc' },
+        },
+        attachments: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (!claim) throw new NotFoundException('Expense claim not found');
+    return claim;
+  }
+
+  async updateExpenseClaim(
+    companyId: string,
+    id: string,
+    actorId: string,
+    dto: UpdateExpenseClaimDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const oldValue = await this.prisma.expenseClaim.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: { items: true, attachments: true },
+    });
+    if (!oldValue) throw new NotFoundException('Expense claim not found');
+    const totalAmount = dto.items
+      ? dto.items.reduce(
+          (sum, item) => sum + item.amount + (item.taxAmount ?? 0),
+          0,
+        )
+      : undefined;
+    const claim = await this.prisma.expenseClaim.update({
+      where: { id },
+      data: {
+        employeeId: dto.employeeId,
+        title: dto.title,
+        claimDate: dto.claimDate ? this.toDateOnly(dto.claimDate)! : undefined,
+        totalAmount:
+          totalAmount !== undefined ? this.money(totalAmount) : undefined,
+        updatedById: actorId,
+        items: dto.items
+          ? {
+              deleteMany: {},
+              create: dto.items.map((item) => ({
+                companyId,
+                expenseCategoryId: item.expenseCategoryId,
+                description: item.description,
+                expenseDate: this.toDateOnly(item.expenseDate)!,
+                amount: item.amount,
+                taxAmount: item.taxAmount ?? 0,
+              })),
+            }
+          : undefined,
+        attachments: dto.attachments
+          ? {
+              deleteMany: {},
+              create: dto.attachments.map((attachment) => ({
+                companyId,
+                fileName: attachment.fileName,
+                storageKey: attachment.storageKey,
+                mimeType: attachment.mimeType,
+                size: attachment.size,
+                createdById: actorId,
+              })),
+            }
+          : undefined,
+      },
+      include: { items: true, attachments: true },
+    });
+    await this.audit(
+      companyId,
+      actorId,
+      'finance.expenses.update',
+      'ExpenseClaim',
+      id,
+      oldValue,
+      claim,
+      ipAddress,
+      userAgent,
+    );
+    return claim;
   }
 
   async changeExpenseStatus(
@@ -390,6 +561,89 @@ export class FinanceService {
     return this.paginated(data, page, limit, total);
   }
 
+  async findVendorBill(companyId: string, id: string) {
+    const bill = await this.prisma.vendorBill.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: {
+        vendor: { select: { id: true, name: true, email: true, phone: true } },
+        items: true,
+        payments: {
+          where: { deletedAt: null },
+          orderBy: { paymentDate: 'desc' },
+        },
+      },
+    });
+    if (!bill) throw new NotFoundException('Vendor bill not found');
+    return bill;
+  }
+
+  async updateVendorBill(
+    companyId: string,
+    id: string,
+    actorId: string,
+    dto: UpdateVendorBillDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const oldValue = await this.prisma.vendorBill.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: { items: true },
+    });
+    if (!oldValue) throw new NotFoundException('Vendor bill not found');
+    if (dto.billNumber || dto.vendorId) {
+      const existing = await this.prisma.vendorBill.findFirst({
+        where: {
+          id: { not: id },
+          companyId,
+          vendorId: dto.vendorId ?? oldValue.vendorId,
+          billNumber: dto.billNumber ?? oldValue.billNumber,
+          deletedAt: null,
+        },
+      });
+      if (existing) throw new ConflictException('Vendor bill already exists');
+    }
+    const totals = dto.items ? this.vendorBillTotals(dto.items) : undefined;
+    const paidAmount = Number(oldValue.paidAmount);
+    const totalAmount = totals?.totalAmount ?? Number(oldValue.totalAmount);
+    const bill = await this.prisma.vendorBill.update({
+      where: { id },
+      data: {
+        vendorId: dto.vendorId,
+        billNumber: dto.billNumber,
+        billDate: dto.billDate ? this.toDateOnly(dto.billDate)! : undefined,
+        dueDate: dto.dueDate ? this.toDateOnly(dto.dueDate) : undefined,
+        notes: dto.notes,
+        subTotal: totals?.subTotal,
+        taxAmount: totals?.taxAmount,
+        totalAmount: totals?.totalAmount,
+        balanceAmount:
+          totals !== undefined
+            ? this.money(Math.max(totalAmount - paidAmount, 0))
+            : undefined,
+        updatedById: actorId,
+        items: dto.items
+          ? {
+              deleteMany: {},
+              create: this.vendorBillItemCreates(dto.items, companyId),
+            }
+          : undefined,
+      },
+      include: { items: true },
+    });
+    await this.audit(
+      companyId,
+      actorId,
+      'finance.vendor_bills.update',
+      'VendorBill',
+      id,
+      oldValue,
+      bill,
+      ipAddress,
+      userAgent,
+    );
+    return bill;
+  }
+
   async createVendorPayment(
     companyId: string,
     actorId: string,
@@ -466,6 +720,10 @@ export class FinanceService {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { [query.sortBy ?? 'paymentDate']: query.sortOrder ?? 'desc' },
+        include: {
+          vendor: { select: { id: true, name: true } },
+          vendorBill: { select: { id: true, billNumber: true } },
+        },
       }),
       this.prisma.vendorPayment.count({ where }),
     ]);
@@ -598,6 +856,7 @@ export class FinanceService {
         orderBy: {
           [query.sortBy ?? 'transactionDate']: query.sortOrder ?? 'desc',
         },
+        include: { pettyCashAccount: { select: { id: true, name: true } } },
       }),
       this.prisma.pettyCashTransaction.count({ where }),
     ]);
@@ -657,7 +916,8 @@ export class FinanceService {
 
   private async ensureNoDuplicateVendor(
     companyId: string,
-    dto: CreateVendorDto,
+    dto: CreateVendorDto | UpdateVendorDto,
+    excludeId?: string,
   ) {
     const or: Prisma.VendorWhereInput[] = [];
     if (dto.email) or.push({ email: this.normalizeEmail(dto.email) });
@@ -666,7 +926,12 @@ export class FinanceService {
     if (or.length === 0) return;
 
     const existing = await this.prisma.vendor.findFirst({
-      where: { companyId, deletedAt: null, OR: or },
+      where: {
+        companyId,
+        deletedAt: null,
+        OR: or,
+        id: excludeId ? { not: excludeId } : undefined,
+      },
     });
     if (existing) {
       throw new ConflictException(
@@ -694,6 +959,36 @@ export class FinanceService {
     return records
       .filter((record) => record.status === status)
       .reduce((sum, record) => sum + Number(record.totalAmount), 0);
+  }
+
+  private vendorBillItemCreates(items: VendorBillItemDto[], companyId: string) {
+    return items.map((item) => {
+      const lineTotal = item.quantity * item.unitPrice + (item.taxAmount ?? 0);
+      return {
+        companyId,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        taxAmount: item.taxAmount ?? 0,
+        lineTotal: this.money(lineTotal),
+      };
+    });
+  }
+
+  private vendorBillTotals(items: VendorBillItemDto[]) {
+    const subTotal = items.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
+      0,
+    );
+    const taxAmount = items.reduce(
+      (sum, item) => sum + (item.taxAmount ?? 0),
+      0,
+    );
+    return {
+      subTotal: this.money(subTotal),
+      taxAmount: this.money(taxAmount),
+      totalAmount: this.money(subTotal + taxAmount),
+    };
   }
 
   private normalizeEmail(email?: string) {

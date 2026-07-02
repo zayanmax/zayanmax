@@ -505,7 +505,9 @@ Vendor permissions:
 ### Expense Claim Routes
 
 - `GET /api/v1/finance/expenses`
+- `GET /api/v1/finance/expenses/:id`
 - `POST /api/v1/finance/expenses`
+- `PATCH /api/v1/finance/expenses/:id`
 - `PATCH /api/v1/finance/expenses/:id/status`
 
 Expense claim statuses:
@@ -522,12 +524,16 @@ Expense attachment APIs store metadata only. They do not upload files or integra
 ### Vendor Routes
 
 - `GET /api/v1/vendors`
+- `GET /api/v1/vendors/:id`
 - `POST /api/v1/vendors`
+- `PATCH /api/v1/vendors/:id`
 
 ### Vendor Bill Routes
 
 - `GET /api/v1/finance/vendor-bills`
+- `GET /api/v1/finance/vendor-bills/:id`
 - `POST /api/v1/finance/vendor-bills`
+- `PATCH /api/v1/finance/vendor-bills/:id`
 
 Vendor bill statuses:
 

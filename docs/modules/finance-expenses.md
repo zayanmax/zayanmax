@@ -1,6 +1,6 @@
 # Finance, Expenses & Vendor Payments Module
 
-Last updated: 2026-06-13
+Last updated: 2026-07-02
 
 ## Scope
 
@@ -89,18 +89,24 @@ Expense category routes:
 Expense claim routes:
 
 - `GET /api/v1/finance/expenses`
+- `GET /api/v1/finance/expenses/:id`
 - `POST /api/v1/finance/expenses`
+- `PATCH /api/v1/finance/expenses/:id`
 - `PATCH /api/v1/finance/expenses/:id/status`
 
 Vendor routes:
 
 - `GET /api/v1/vendors`
+- `GET /api/v1/vendors/:id`
 - `POST /api/v1/vendors`
+- `PATCH /api/v1/vendors/:id`
 
 Vendor bill routes:
 
 - `GET /api/v1/finance/vendor-bills`
+- `GET /api/v1/finance/vendor-bills/:id`
 - `POST /api/v1/finance/vendor-bills`
+- `PATCH /api/v1/finance/vendor-bills/:id`
 
 Vendor payment routes:
 

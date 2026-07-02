@@ -29,6 +29,9 @@ import {
   ExpenseClaimQueryDto,
   FinanceListQueryDto,
   PettyCashTransactionQueryDto,
+  UpdateExpenseClaimDto,
+  UpdateVendorBillDto,
+  UpdateVendorDto,
   VendorBillQueryDto,
   VendorPaymentQueryDto,
   VendorQueryDto,
@@ -89,6 +92,15 @@ export class FinanceController {
     return this.financeService.findExpenseClaims(user.companyId, query);
   }
 
+  @RequirePermissions('finance.view')
+  @Get('finance/expenses/:id')
+  findExpenseClaim(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.financeService.findExpenseClaim(user.companyId, id);
+  }
+
   @RequirePermissions('finance.manage')
   @Post('finance/expenses')
   createExpenseClaim(
@@ -99,6 +111,25 @@ export class FinanceController {
   ) {
     return this.financeService.createExpenseClaim(
       user.companyId,
+      user.id,
+      dto,
+      ipAddress,
+      request.headers['user-agent'],
+    );
+  }
+
+  @RequirePermissions('finance.manage')
+  @Patch('finance/expenses/:id')
+  updateExpenseClaim(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateExpenseClaimDto,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    return this.financeService.updateExpenseClaim(
+      user.companyId,
+      id,
       user.id,
       dto,
       ipAddress,
@@ -134,6 +165,15 @@ export class FinanceController {
     return this.financeService.findVendors(user.companyId, query);
   }
 
+  @RequirePermissions('vendors.view')
+  @Get('vendors/:id')
+  findVendor(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.financeService.findVendor(user.companyId, id);
+  }
+
   @RequirePermissions('vendors.manage')
   @Post('vendors')
   createVendor(
@@ -151,6 +191,25 @@ export class FinanceController {
     );
   }
 
+  @RequirePermissions('vendors.manage')
+  @Patch('vendors/:id')
+  updateVendor(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateVendorDto,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    return this.financeService.updateVendor(
+      user.companyId,
+      id,
+      user.id,
+      dto,
+      ipAddress,
+      request.headers['user-agent'],
+    );
+  }
+
   @RequirePermissions('finance.view')
   @Get('finance/vendor-bills')
   findVendorBills(
@@ -158,6 +217,15 @@ export class FinanceController {
     @Query() query: VendorBillQueryDto,
   ) {
     return this.financeService.findVendorBills(user.companyId, query);
+  }
+
+  @RequirePermissions('finance.view')
+  @Get('finance/vendor-bills/:id')
+  findVendorBill(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.financeService.findVendorBill(user.companyId, id);
   }
 
   @RequirePermissions('finance.manage')
@@ -170,6 +238,25 @@ export class FinanceController {
   ) {
     return this.financeService.createVendorBill(
       user.companyId,
+      user.id,
+      dto,
+      ipAddress,
+      request.headers['user-agent'],
+    );
+  }
+
+  @RequirePermissions('finance.manage')
+  @Patch('finance/vendor-bills/:id')
+  updateVendorBill(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateVendorBillDto,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    return this.financeService.updateVendorBill(
+      user.companyId,
+      id,
       user.id,
       dto,
       ipAddress,

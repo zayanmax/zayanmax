@@ -812,13 +812,43 @@ Latest Backend Verification After Billing Read Endpoints:
 - `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
 - `npm run build`: passed.
 
+## Completed Frontend Finance, Expenses & Vendor Payments Pass
+
+- Added Finance frontend screens under `apps/frontend/src/features/finance`.
+- Added routes for `/finance`, `/finance/expenses`, `/finance/expenses/new`, `/finance/expenses/[id]`, `/finance/expenses/[id]/edit`, `/finance/expense-categories`, `/finance/vendors`, `/finance/vendors/new`, `/finance/vendors/[id]`, `/finance/vendors/[id]/edit`, `/finance/vendor-bills`, `/finance/vendor-bills/new`, `/finance/vendor-bills/[id]`, `/finance/vendor-bills/[id]/edit`, `/finance/vendor-payments`, `/finance/petty-cash`, and `/finance/petty-cash/accounts`.
+- Added finance overview with dashboard summary cards and recent vendor payment metadata.
+- Added expense list/search/filter/pagination, dynamic-item create/edit, detail page, status actions, and attachment metadata rows.
+- Added expense category list/create modal.
+- Added vendor list/search/pagination, create/edit, and detail pages with related bills and payments.
+- Added vendor bill list/search/filter/pagination, dynamic-item create/edit, and detail pages.
+- Added vendor payment list/create flow.
+- Added petty cash transaction and account list/create flows.
+- Added direct backend endpoints for expense/vendor/vendor-bill detail and update because requested frontend detail/edit routes were blocked without them.
+- Updated permission-aware navigation to show Finance Overview, Expenses, Expense Categories, Vendors, Vendor Bills, Vendor Payments, and Petty Cash.
+- Added frontend documentation at `docs/frontend/finance-expenses-vendors.md`.
+
+Latest Frontend Finance, Expenses & Vendor Payments verification:
+
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+
+Latest Backend Verification After Finance Detail/Update Endpoints:
+
+- `npm run prisma:validate`: passed. Prisma also reported the existing Prisma 7 config deprecation notice.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with existing Jest/Supertest/test typing warnings.
+- `npm test -- --runInBand`: 23 suites, 104 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+
 ## Not Started
 
 - Integration providers.
 - BullMQ queue wiring.
 - File/document binary storage abstraction.
 - Refactoring existing local approval flows into the generic approval engine.
-- Business frontend screens beyond foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, and Invoices / Billing / Receivables.
+- Remaining business frontend screens beyond the completed foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, and Finance / Expenses / Vendors passes.
 - Invoice PDF generation, email/WhatsApp delivery, full accounting ledger posting, payment gateway integration, bank files, and reconciliation.
 
 ## Next Build Milestone
@@ -836,4 +866,4 @@ Continue backend before frontend:
 9. Add automatic dynamic approver resolution and escalation workers only when explicitly scoped.
 10. Add accounting ledger integration only when the full accounting scope starts.
 11. Add GST filing, purchase invoice posting, invoice/quotation PDF generation, payment gateway integration, reconciliation, and bank payment files only when explicitly scoped.
-12. Frontend foundation can start from `/api/docs-json` and `docs/frontend/api-consumption.md` when explicitly approved.
+12. Continue frontend module screens on top of `/api/docs-json` and `docs/frontend/api-consumption.md` when explicitly scoped.

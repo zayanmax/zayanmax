@@ -866,7 +866,7 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 ## Latest Frontend State
 
 - Frontend foundation exists under `apps/frontend`.
-- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, Sales / Leads / Quotations, and Invoices / Billing / Receivables frontend passes are implemented.
+- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, and Finance / Expenses / Vendor Payments frontend passes are implemented.
 - Projects routes exist at `/projects`, `/projects/new`, `/projects/[id]`, and `/projects/[id]/edit`.
 - Tasks routes exist at `/tasks`, `/tasks/new`, `/tasks/[id]`, `/tasks/[id]/edit`, and `/tasks/kanban`.
 - Projects and Tasks use `projects.*` and `tasks.*` permissions from `/auth/me`.
@@ -882,10 +882,15 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 - Billing date range filters are not exposed because billing list/summary endpoints do not currently accept date range filters.
 - Latest billing frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
 - Latest backend verification after billing read endpoints passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
+- Finance routes exist at `/finance`, `/finance/expenses`, `/finance/expense-categories`, `/finance/vendors`, `/finance/vendor-bills`, `/finance/vendor-payments`, and `/finance/petty-cash` with overview, list, create, edit, detail, payment, and petty cash flows.
+- Finance screens use `finance.view`/`finance.manage`; vendor screens use `vendors.view`/`vendors.manage`.
+- Expense categories and petty cash accounts are list/create only because backend update/delete routes are not exposed.
+- Latest finance frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
+- Latest backend verification after finance detail/update endpoints passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
 
 ## Next Frontend Work
 
-1. Build Finance, Expenses & Vendor Payments screens.
+1. Build Purchase, Inventory & Asset Management screens.
 2. Add a reusable user lookup component if owner assignment should support direct user selection.
 3. Add an opportunity stage list endpoint and frontend lookup if opportunity stages should be selectable by name.
 4. Add quotation line item update support only if the backend API is extended.
