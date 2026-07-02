@@ -1,0 +1,34 @@
+export enum HelpdeskTicketStatusDto {
+  OPEN = 'OPEN',
+  IN_PROGRESS = 'IN_PROGRESS',
+  WAITING_FOR_EMPLOYEE = 'WAITING_FOR_EMPLOYEE',
+  WAITING_FOR_ADMIN = 'WAITING_FOR_ADMIN',
+  RESOLVED = 'RESOLVED',
+  CLOSED = 'CLOSED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum HelpdeskTicketPriorityDto {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+}
+
+export enum HelpdeskTicketSourceDto {
+  EMPLOYEE = 'EMPLOYEE',
+  ADMIN = 'ADMIN',
+  SYSTEM = 'SYSTEM',
+}
+
+export enum HelpdeskEntityTypeDto {
+  EMPLOYEE = 'EMPLOYEE',
+  ASSET = 'ASSET',
+  DOCUMENT = 'DOCUMENT',
+  PAYROLL = 'PAYROLL',
+  ATTENDANCE = 'ATTENDANCE',
+  LEAVE = 'LEAVE',
+  FINANCE = 'FINANCE',
+  PURCHASE = 'PURCHASE',
+  INVENTORY = 'INVENTORY',
+}

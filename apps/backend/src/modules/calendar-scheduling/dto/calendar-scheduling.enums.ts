@@ -1,0 +1,44 @@
+export enum CalendarEventTypeDto {
+  MEETING = 'MEETING',
+  TASK_DEADLINE = 'TASK_DEADLINE',
+  PROJECT_MILESTONE = 'PROJECT_MILESTONE',
+  HOLIDAY = 'HOLIDAY',
+  INTERVIEW = 'INTERVIEW',
+  CLIENT_MEETING = 'CLIENT_MEETING',
+  REMINDER = 'REMINDER',
+  BIRTHDAY = 'BIRTHDAY',
+  WORK_ANNIVERSARY = 'WORK_ANNIVERSARY',
+  CUSTOM = 'CUSTOM',
+}
+
+export enum CalendarEventStatusDto {
+  SCHEDULED = 'SCHEDULED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  POSTPONED = 'POSTPONED',
+}
+
+export enum CalendarRsvpStatusDto {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  DECLINED = 'DECLINED',
+  TENTATIVE = 'TENTATIVE',
+}
+
+export enum CalendarEntityTypeDto {
+  EMPLOYEE = 'EMPLOYEE',
+  CLIENT = 'CLIENT',
+  PROJECT = 'PROJECT',
+  TASK = 'TASK',
+  LEAVE = 'LEAVE',
+  HOLIDAY = 'HOLIDAY',
+  DOCUMENT = 'DOCUMENT',
+}
+
+export enum NotificationDeliveryChannelDto {
+  IN_APP = 'IN_APP',
+  EMAIL = 'EMAIL',
+  SMS = 'SMS',
+  WHATSAPP = 'WHATSAPP',
+  PUSH = 'PUSH',
+}
