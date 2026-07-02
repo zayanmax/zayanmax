@@ -3,21 +3,20 @@ import {
   Controller,
   Delete,
   Get,
-  Ip,
   Param,
   Patch,
   Post,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
+import { RequestContextDecorator } from '../../common/decorators/request-context.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import type { CurrentUser } from '../../common/types/current-user.type';
+import type { RequestContext } from '../../common/types/request-context.type';
 import { AddProjectMemberDto } from './dto/add-project-member.dto';
 import { ChangeProjectStatusDto } from './dto/change-project-status.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -46,15 +45,14 @@ export class ProjectsController {
   create(
     @CurrentUserDecorator() user: CurrentUser,
     @Body() dto: CreateProjectDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.createProject(
       user.companyId,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -70,16 +68,15 @@ export class ProjectsController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: UpdateProjectDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.updateProject(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -89,16 +86,15 @@ export class ProjectsController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: ChangeProjectStatusDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.changeProjectStatus(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -107,15 +103,14 @@ export class ProjectsController {
   remove(
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.removeProject(
       user.companyId,
       id,
       user.id,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -134,16 +129,15 @@ export class ProjectsController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: AddProjectMemberDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.addProjectMember(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 

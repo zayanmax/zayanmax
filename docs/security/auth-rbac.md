@@ -74,6 +74,24 @@ The seed script provisions all permission keys used by implemented controllers. 
 - Seeded permission keys: 69.
 - Missing seeded permission keys: 0.
 
+## Request Context
+
+Shared request-context extraction exists in:
+
+```text
+apps/backend/src/common/decorators/request-context.decorator.ts
+```
+
+It normalizes:
+
+- actor user ID
+- company ID
+- IP address
+- user agent
+- request ID placeholder from `x-request-id` or `x-correlation-id`
+
+The helper is now used in auth, employees, clients, projects/tasks, and billing controllers where audit metadata is already passed to services. Other modules can adopt the same decorator incrementally when mutation endpoints are touched.
+
 ## Seeded Permission Keys
 
 | Key | Module | Action |

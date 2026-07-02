@@ -54,12 +54,36 @@ describe('AppController (e2e)', () => {
       .expect(200)
       .expect((response) => {
         expect(response.body.openapi).toEqual(expect.any(String));
+        for (const path of [
+          '/api/v1/auth/login',
+          '/api/v1/auth/refresh',
+          '/api/v1/auth/me',
+          '/api/v1/dashboard/summary',
+          '/api/v1/employees',
+          '/api/v1/employees/{id}',
+          '/api/v1/clients',
+          '/api/v1/clients/{id}',
+          '/api/v1/projects',
+          '/api/v1/projects/{id}',
+          '/api/v1/tasks',
+          '/api/v1/tasks/{id}',
+          '/api/v1/billing/invoices',
+        ]) {
+          expect(response.body.paths[path]).toEqual(expect.any(Object));
+        }
         expect(response.body.components.securitySchemes.bearer).toEqual(
           expect.objectContaining({ type: 'http', scheme: 'bearer' }),
         );
         expect(response.body.components.schemas.StandardErrorResponse).toEqual(
           expect.any(Object),
         );
+        expect(
+          response.body.components.schemas.LoginDto.properties.email.example,
+        ).toBe('admin@zayan.test');
+        expect(
+          response.body.components.schemas.CreateEmployeeDto.properties
+            .employeeCode.example,
+        ).toBe('EMP-1001');
       });
 
     await request(app.getHttpServer())

@@ -674,6 +674,31 @@ Latest Backend Platform Hardening verification:
 - `npm run build`: passed.
 - Additional `npm audit --omit=dev`: failed on high-severity Multer advisories inherited through Nest platform packages; npm's suggested `--force` fix would apply breaking dependency changes, so it was not applied in this pass.
 
+## Completed Backend Security Cleanup & Frontend Readiness Pass
+
+- Investigated the Multer/Nest production audit warning.
+- Confirmed the dependency path was `@nestjs/swagger -> @nestjs/core -> @nestjs/platform-express -> multer@2.1.1`.
+- Updated Nest patch packages to `11.1.27`.
+- Added npm override for `multer@2.2.0`.
+- Verified `npm audit --omit=dev` now reports 0 vulnerabilities.
+- Added request-context extraction helper and decorator for actor user ID, company ID, IP address, user agent, and request ID placeholder.
+- Used request context in auth, employees, clients, projects/tasks, and billing controllers where audit metadata is already passed to services.
+- Added CORS frontend env support through `FRONTEND_URL` and `CORS_ORIGINS`.
+- Added Swagger DTO examples for high-use frontend surfaces: auth, dashboard filters, pagination/list filters, employees, clients, projects, tasks, and invoices.
+- Added e2e assertion that `/api/docs-json` exposes frontend-critical paths and examples.
+- Added security audit documentation at `docs/backend/security-audit.md`.
+- Added frontend API consumption documentation at `docs/frontend/api-consumption.md`.
+
+Latest Backend Security Cleanup & Frontend Readiness verification:
+
+- `npm audit --omit=dev`: passed, 0 vulnerabilities.
+- `npm run prisma:validate`: passed. Prisma also reported the existing Prisma 7 config deprecation notice.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with 0 errors and 675 warnings in existing Jest/Supertest/test typing patterns.
+- `npm test -- --runInBand`: 23 suites, 104 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+
 ## Not Started
 
 - Frontend source code.
@@ -690,15 +715,15 @@ Latest Backend Platform Hardening verification:
 
 Continue backend before frontend:
 
-1. Add request context helper for consistent actor/IP/user-agent audit metadata.
-2. Add fuller CRUD coverage and tests for companies, branches, departments, designations, roles, permissions, and child-record update/delete if needed.
+1. Add fuller CRUD coverage and tests for companies, branches, departments, designations, roles, permissions, and child-record update/delete if needed.
+2. Adopt the request-context decorator in additional mutation-heavy modules when those controllers are next touched.
 3. Add optional update/delete endpoints for attendance corrections, leave types, leave balances, leave requests, salary structures, salary assignments, advances, and payroll periods if product needs them.
 4. Add targeted DB indexes from real query plans where list endpoints need more than existing company/status/date filters.
-5. Resolve the Multer/Nest dependency audit advisories when a non-breaking upgrade path is available.
+5. Monitor Nest platform-express releases and remove the `multer` override once Nest directly depends on a patched Multer version.
 6. Add optional 2FA placeholders behind clear module boundaries if required.
 7. Add BullMQ/Redis queue module and notification/file-service abstractions.
 8. Refactor existing local approval flows into the generic approval engine only when explicitly scoped.
 9. Add automatic dynamic approver resolution and escalation workers only when explicitly scoped.
 10. Add accounting ledger integration only when the full accounting scope starts.
 11. Add GST filing, purchase invoice posting, invoice/quotation PDF generation, payment gateway integration, reconciliation, and bank payment files only when explicitly scoped.
-12. Continue backend modules before frontend unless explicitly redirected.
+12. Frontend foundation can start from `/api/docs-json` and `docs/frontend/api-consumption.md` when explicitly approved.

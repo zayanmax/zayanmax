@@ -36,7 +36,7 @@ The project now has:
 - Invoices, Billing & Receivables module with invoice series, invoices, invoice items, quotation conversion, payment receipts, receipt allocations, credit/debit note metadata, receivable summaries, client statements, and aging summaries.
 - Approvals Workflow Engine module with workflow definitions, workflow steps, approval requests, step instances, action records, delegation metadata, escalation metadata, pending approvals, and entity history.
 - Dashboard, Reports & Analytics module with company, HR, project/task, CRM/sales, finance, inventory/assets, helpdesk, approvals, and calendar dashboard summaries plus report registry and export request metadata.
-- Backend platform hardening with Swagger/OpenAPI, health/readiness checks, session/device metadata foundation, password change, password reset token metadata, logout-all, and RBAC permission audit coverage.
+- Backend platform hardening with Swagger/OpenAPI, health/readiness checks, session/device metadata foundation, password change, password reset token metadata, logout-all, request-context foundation, CORS frontend env support, and RBAC permission audit coverage.
 - Unit tests and e2e tests.
 
 No frontend has been created.
@@ -675,6 +675,16 @@ Latest Backend Platform Hardening validation:
 - `npm run build`: passed.
 - `npm audit --omit=dev`: still reports high-severity Multer advisories inherited through Nest platform packages; the forced npm fix would be breaking and was not applied.
 
+Latest Backend Security Cleanup & Frontend Readiness validation:
+
+- `npm audit --omit=dev`: passed, 0 vulnerabilities.
+- `npm run prisma:validate`: passed.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with 0 errors and 675 warnings in existing Jest/Supertest/test typing patterns.
+- `npm test -- --runInBand`: 23 suites, 104 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+
 Lint exits successfully with warnings in Jest/Supertest typing only.
 
 ## What Changed
@@ -793,15 +803,20 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 - An eighteenth migration exists at `apps/backend/prisma/migrations/20260702103000_platform_hardening_auth_sessions`.
 - Auth endpoints now include `/api/v1/auth/logout-all`, `/api/v1/auth/change-password`, `/api/v1/auth/password-reset/request`, and `/api/v1/auth/password-reset/confirm`.
 - Platform hardening docs exist at `docs/backend/platform-hardening.md`, `docs/api/swagger-openapi.md`, and `docs/security/auth-rbac.md`.
+- Production audit is clean through a non-breaking `multer@2.2.0` npm override and Nest `11.1.27` patch alignment.
+- Security audit details exist at `docs/backend/security-audit.md`.
+- Frontend API consumption notes exist at `docs/frontend/api-consumption.md`.
+- CORS frontend envs exist: `FRONTEND_URL` and `CORS_ORIGINS`.
+- Request-context decorator exists at `apps/backend/src/common/decorators/request-context.decorator.ts`.
 
 ## Next Backend Work
 
 1. Add more unit/e2e tests around role and permission management.
 2. Add CRUD tests for branches, departments, designations, and companies.
 3. Add optional update/delete routes for client contacts, notes, document metadata, project members, task assignees, comments, attachments, leave types, leave balances, attendance corrections, salary structures, salary assignments, advances, payroll periods, calendar attendees, resources, bookings, reminders, helpdesk categories, subcategories, comments, notes, attachments, performance metadata, recruitment metadata, sales child metadata, billing child metadata, and approval child metadata if product needs them.
-4. Add a shared audit context helper so controllers do not pass IP/user-agent manually.
+4. Adopt the request-context decorator in additional mutation-heavy modules when those controllers are next touched.
 5. Add targeted DB indexes from real query plans where list endpoints need more than existing company/status/date filters.
-6. Resolve the Multer/Nest dependency audit advisories when a non-breaking upgrade path is available.
+6. Monitor Nest platform-express releases and remove the `multer` override once Nest directly depends on a patched Multer version.
 7. Add Redis/BullMQ queue module.
 8. Add file/document binary storage abstraction before real client, task, or document binary uploads.
 9. Add real password reset delivery only when email/SMS/WhatsApp provider scope starts.

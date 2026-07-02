@@ -3,22 +3,21 @@ import {
   Controller,
   Delete,
   Get,
-  Ip,
   Param,
   Patch,
   Post,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
+import { RequestContextDecorator } from '../../common/decorators/request-context.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import type { CurrentUser } from '../../common/types/current-user.type';
+import type { RequestContext } from '../../common/types/request-context.type';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeesService } from './employees.service';
@@ -44,15 +43,14 @@ export class EmployeesController {
   create(
     @CurrentUserDecorator() user: CurrentUser,
     @Body() dto: CreateEmployeeDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.employeesService.create(
       user.companyId,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -68,16 +66,15 @@ export class EmployeesController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: UpdateEmployeeDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.employeesService.update(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -86,15 +83,14 @@ export class EmployeesController {
   remove(
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.employeesService.remove(
       user.companyId,
       id,
       user.id,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 }

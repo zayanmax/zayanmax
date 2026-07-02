@@ -46,6 +46,14 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   STORAGE_PROVIDER?: string;
+
+  @IsOptional()
+  @IsString()
+  FRONTEND_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  CORS_ORIGINS?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

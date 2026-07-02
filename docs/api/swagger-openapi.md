@@ -82,4 +82,15 @@ Error shape:
 
 ## DTO Examples
 
-Auth DTOs include examples for login, refresh session metadata, password change, and password reset metadata endpoints. Add more DTO examples module-by-module when frontend integration starts and the API payloads need richer inline guidance.
+DTO examples currently cover high-use frontend integration surfaces:
+
+- auth login, refresh, password change, and password reset metadata.
+- dashboard date range filters.
+- pagination and standard list filters.
+- employees create/list.
+- clients create/list.
+- projects create/list.
+- tasks create/list.
+- invoices create/list.
+
+The e2e suite asserts that `/api/docs-json` exposes auth, dashboard, employee, client, project, task, and invoice paths for frontend tooling.

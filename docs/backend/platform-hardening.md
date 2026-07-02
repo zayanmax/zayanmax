@@ -145,8 +145,8 @@ Latest full verification from `apps/backend`:
 
 Additional dependency audit:
 
-- `npm audit --omit=dev`: reports high-severity Multer advisories inherited through Nest platform packages.
-- The npm suggested forced fix would apply breaking dependency changes, so it was not applied during this scoped stabilization pass.
+- The earlier production Multer audit warning was resolved in the follow-up security cleanup pass with a non-breaking `multer@2.2.0` npm override and Nest `11.1.27` patch alignment.
+- Current security audit details live in `docs/backend/security-audit.md`.
 
 ## Exclusions
 

@@ -3,21 +3,20 @@ import {
   Controller,
   Delete,
   Get,
-  Ip,
   Param,
   Patch,
   Post,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
+import { RequestContextDecorator } from '../../common/decorators/request-context.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import type { CurrentUser } from '../../common/types/current-user.type';
+import type { RequestContext } from '../../common/types/request-context.type';
 import { AddTaskAssigneeDto } from './dto/add-task-assignee.dto';
 import { ChangeTaskStatusDto } from './dto/change-task-status.dto';
 import { CreateSubtaskDto } from './dto/create-subtask.dto';
@@ -58,15 +57,14 @@ export class TasksController {
   create(
     @CurrentUserDecorator() user: CurrentUser,
     @Body() dto: CreateTaskDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.createTask(
       user.companyId,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -82,16 +80,15 @@ export class TasksController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: UpdateTaskDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.updateTask(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -101,16 +98,15 @@ export class TasksController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: ChangeTaskStatusDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.changeTaskStatus(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -119,15 +115,14 @@ export class TasksController {
   remove(
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.removeTask(
       user.companyId,
       id,
       user.id,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -137,16 +132,15 @@ export class TasksController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: CreateSubtaskDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.createSubtask(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -165,16 +159,15 @@ export class TasksController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: CreateTaskCommentDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.addTaskComment(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -193,16 +186,15 @@ export class TasksController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: CreateTaskAttachmentDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.addTaskAttachment(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -221,16 +213,15 @@ export class TasksController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: AddTaskAssigneeDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.tasksProjectsService.addTaskAssignee(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 }

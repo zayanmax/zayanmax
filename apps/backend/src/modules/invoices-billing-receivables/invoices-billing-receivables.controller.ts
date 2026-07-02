@@ -2,21 +2,20 @@ import {
   Body,
   Controller,
   Get,
-  Ip,
   Param,
   Patch,
   Post,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
+import { RequestContextDecorator } from '../../common/decorators/request-context.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import type { CurrentUser } from '../../common/types/current-user.type';
+import type { RequestContext } from '../../common/types/request-context.type';
 import {
   BillingListQueryDto,
   ConvertQuotationToInvoiceDto,
@@ -82,15 +81,14 @@ export class InvoicesBillingReceivablesController {
   createInvoice(
     @CurrentUserDecorator() user: CurrentUser,
     @Body() dto: CreateInvoiceDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.invoicesBillingReceivablesService.createInvoice(
       user.companyId,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -100,16 +98,15 @@ export class InvoicesBillingReceivablesController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: UpdateInvoiceDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.invoicesBillingReceivablesService.updateInvoice(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -162,16 +159,15 @@ export class InvoicesBillingReceivablesController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('quotationId') quotationId: string,
     @Body() dto: ConvertQuotationToInvoiceDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.invoicesBillingReceivablesService.convertQuotationToInvoice(
       user.companyId,
       quotationId,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -180,15 +176,14 @@ export class InvoicesBillingReceivablesController {
   createPaymentReceipt(
     @CurrentUserDecorator() user: CurrentUser,
     @Body() dto: CreatePaymentReceiptDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.invoicesBillingReceivablesService.createPaymentReceipt(
       user.companyId,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -212,15 +207,14 @@ export class InvoicesBillingReceivablesController {
   createCreditNote(
     @CurrentUserDecorator() user: CurrentUser,
     @Body() dto: CreateCreditNoteDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.invoicesBillingReceivablesService.createCreditNote(
       user.companyId,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -229,15 +223,14 @@ export class InvoicesBillingReceivablesController {
   createDebitNote(
     @CurrentUserDecorator() user: CurrentUser,
     @Body() dto: CreateDebitNoteDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.invoicesBillingReceivablesService.createDebitNote(
       user.companyId,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 

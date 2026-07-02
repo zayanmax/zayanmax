@@ -1,17 +1,10 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Ip,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
+import { RequestContextDecorator } from '../../common/decorators/request-context.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import type { CurrentUser } from '../../common/types/current-user.type';
+import type { RequestContext } from '../../common/types/request-context.type';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import {
@@ -29,12 +22,11 @@ export class AuthController {
   @Post('login')
   login(
     @Body() dto: LoginDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.authService.login(dto, {
-      ipAddress,
-      userAgent: request.headers['user-agent'],
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
     });
   }
 
@@ -74,12 +66,11 @@ export class AuthController {
   @Post('password-reset/request')
   requestPasswordReset(
     @Body() dto: PasswordResetRequestDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.authService.requestPasswordReset(dto, {
-      ipAddress,
-      userAgent: request.headers['user-agent'],
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
     });
   }
 

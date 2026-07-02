@@ -3,21 +3,20 @@ import {
   Controller,
   Delete,
   Get,
-  Ip,
   Param,
   Patch,
   Post,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
+import { RequestContextDecorator } from '../../common/decorators/request-context.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import type { CurrentUser } from '../../common/types/current-user.type';
+import type { RequestContext } from '../../common/types/request-context.type';
 import { ClientsService } from './clients.service';
 import { ChangeClientStatusDto } from './dto/change-client-status.dto';
 import { ClientQueryDto } from './dto/client-query.dto';
@@ -49,15 +48,14 @@ export class ClientsController {
   create(
     @CurrentUserDecorator() user: CurrentUser,
     @Body() dto: CreateClientDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.clientsService.create(
       user.companyId,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -73,16 +71,15 @@ export class ClientsController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: UpdateClientDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.clientsService.update(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -92,16 +89,15 @@ export class ClientsController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: ChangeClientStatusDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.clientsService.changeStatus(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -110,15 +106,14 @@ export class ClientsController {
   remove(
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.clientsService.remove(
       user.companyId,
       id,
       user.id,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -137,16 +132,15 @@ export class ClientsController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: CreateClientContactDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.clientsService.addContact(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -165,16 +159,15 @@ export class ClientsController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: CreateClientActivityDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.clientsService.addActivity(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -193,16 +186,15 @@ export class ClientsController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: CreateClientNoteDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.clientsService.addNote(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 
@@ -221,16 +213,15 @@ export class ClientsController {
     @CurrentUserDecorator() user: CurrentUser,
     @Param('id') id: string,
     @Body() dto: CreateClientDocumentDto,
-    @Ip() ipAddress: string,
-    @Req() request: Request,
+    @RequestContextDecorator() context: RequestContext,
   ) {
     return this.clientsService.addDocument(
       user.companyId,
       id,
       user.id,
       dto,
-      ipAddress,
-      request.headers['user-agent'],
+      context.ipAddress,
+      context.userAgent,
     );
   }
 }

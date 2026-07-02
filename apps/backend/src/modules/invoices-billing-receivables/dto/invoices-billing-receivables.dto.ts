@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
@@ -53,10 +54,15 @@ export class CreateInvoiceSeriesDto {
 }
 
 export class BillingListQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({
+    enum: InvoiceStatusDto,
+    example: InvoiceStatusDto.ISSUED,
+  })
   @IsOptional()
   @IsEnum(InvoiceStatusDto)
   declare status?: InvoiceStatusDto;
 
+  @ApiPropertyOptional({ example: '00000000-0000-0000-0000-000000000001' })
   @IsOptional()
   @IsUUID()
   clientId?: string;
@@ -71,23 +77,28 @@ export class BillingListQueryDto extends PaginationQueryDto {
 }
 
 export class InvoiceItemDto {
+  @ApiProperty({ example: 'Implementation services' })
   @IsString()
   @IsNotEmpty()
   description!: string;
 
+  @ApiProperty({ example: 2 })
   @IsNumber()
   @Min(0)
   quantity!: number;
 
+  @ApiProperty({ example: 25000 })
   @IsNumber()
   @Min(0)
   unitPrice!: number;
 
+  @ApiPropertyOptional({ example: 1000 })
   @IsOptional()
   @IsNumber()
   @Min(0)
   discountAmount?: number;
 
+  @ApiPropertyOptional({ example: 9000 })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -108,6 +119,7 @@ export class InvoiceItemDto {
 }
 
 export class CreateInvoiceDto {
+  @ApiProperty({ example: '00000000-0000-0000-0000-000000000001' })
   @IsUUID()
   clientId!: string;
 
@@ -127,21 +139,26 @@ export class CreateInvoiceDto {
   @IsUUID()
   seriesId?: string;
 
+  @ApiProperty({ example: 'INV-2035-0001' })
   @IsString()
   @IsNotEmpty()
   invoiceNumber!: string;
 
+  @ApiPropertyOptional({ example: 'Website implementation invoice' })
   @IsOptional()
   @IsString()
   title?: string;
 
+  @ApiPropertyOptional({ example: 'INR' })
   @IsOptional()
   @IsString()
   currency?: string;
 
+  @ApiProperty({ example: '2035-01-31' })
   @IsISO8601({ strict: true })
   issueDate!: string;
 
+  @ApiPropertyOptional({ example: '2035-02-15' })
   @IsOptional()
   @IsISO8601({ strict: true })
   dueDate?: string;
@@ -166,6 +183,17 @@ export class CreateInvoiceDto {
   @IsString()
   notes?: string;
 
+  @ApiProperty({
+    type: [InvoiceItemDto],
+    example: [
+      {
+        description: 'Implementation services',
+        quantity: 2,
+        unitPrice: 25000,
+        taxAmount: 9000,
+      },
+    ],
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => InvoiceItemDto)
