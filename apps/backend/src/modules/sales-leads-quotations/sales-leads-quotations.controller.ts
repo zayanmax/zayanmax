@@ -111,6 +111,12 @@ export class SalesLeadsQuotationsController {
     return this.salesLeadsQuotationsService.findLeads(user.companyId, query);
   }
 
+  @RequirePermissions('sales.view')
+  @Get('leads/:id')
+  findLead(@CurrentUserDecorator() user: CurrentUser, @Param('id') id: string) {
+    return this.salesLeadsQuotationsService.findLead(user.companyId, id);
+  }
+
   @RequirePermissions('sales.manage')
   @Post('leads')
   createLead(
@@ -284,6 +290,15 @@ export class SalesLeadsQuotationsController {
     );
   }
 
+  @RequirePermissions('sales.view')
+  @Get('opportunities/:id')
+  findOpportunity(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.salesLeadsQuotationsService.findOpportunity(user.companyId, id);
+  }
+
   @RequirePermissions('sales.manage')
   @Post('opportunities')
   createOpportunity(
@@ -366,6 +381,15 @@ export class SalesLeadsQuotationsController {
       user.companyId,
       query,
     );
+  }
+
+  @RequirePermissions('sales.view')
+  @Get('quotations/:id')
+  findQuotation(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.salesLeadsQuotationsService.findQuotation(user.companyId, id);
   }
 
   @RequirePermissions('sales.manage')

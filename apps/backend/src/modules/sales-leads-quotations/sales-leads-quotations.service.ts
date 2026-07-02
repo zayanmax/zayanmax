@@ -208,6 +208,37 @@ export class SalesLeadsQuotationsService {
     return this.paginated(data, page, limit, total);
   }
 
+  async findLead(companyId: string, leadId: string) {
+    const lead = await this.prisma.salesLead.findFirst({
+      where: { id: leadId, companyId, deletedAt: null },
+      include: {
+        source: true,
+        stage: true,
+        assignedUser: { select: { id: true, email: true } },
+        assignedEmployee: true,
+        convertedClient: true,
+        activities: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+        },
+        leadNotes: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+        },
+        opportunities: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+        },
+        quotations: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (!lead) throw new NotFoundException('Lead not found');
+    return lead;
+  }
+
   async updateLead(
     companyId: string,
     leadId: string,
@@ -529,6 +560,23 @@ export class SalesLeadsQuotationsService {
     return this.paginated(data, page, limit, total);
   }
 
+  async findOpportunity(companyId: string, opportunityId: string) {
+    const opportunity = await this.prisma.salesOpportunity.findFirst({
+      where: { id: opportunityId, companyId, deletedAt: null },
+      include: {
+        lead: true,
+        client: true,
+        stage: true,
+        quotations: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (!opportunity) throw new NotFoundException('Opportunity not found');
+    return opportunity;
+  }
+
   async updateOpportunity(
     companyId: string,
     opportunityId: string,
@@ -727,6 +775,21 @@ export class SalesLeadsQuotationsService {
       this.prisma.quotation.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findQuotation(companyId: string, quotationId: string) {
+    const quotation = await this.prisma.quotation.findFirst({
+      where: { id: quotationId, companyId, deletedAt: null },
+      include: {
+        items: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+        versions: { orderBy: { versionNumber: 'desc' } },
+        opportunity: true,
+        lead: true,
+        client: true,
+      },
+    });
+    if (!quotation) throw new NotFoundException('Quotation not found');
+    return quotation;
   }
 
   async updateQuotation(

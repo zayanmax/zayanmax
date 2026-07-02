@@ -81,6 +81,7 @@ Lead sources and stages:
 Leads:
 
 - `GET /sales/leads`
+- `GET /sales/leads/:id`
 - `POST /sales/leads`
 - `PATCH /sales/leads/:id`
 - `DELETE /sales/leads/:id`
@@ -94,6 +95,7 @@ Opportunities:
 
 - `POST /sales/opportunity-stages`
 - `GET /sales/opportunities`
+- `GET /sales/opportunities/:id`
 - `POST /sales/opportunities`
 - `PATCH /sales/opportunities/:id`
 - `PATCH /sales/opportunities/:id/status`
@@ -102,6 +104,7 @@ Opportunities:
 Quotations:
 
 - `GET /sales/quotations`
+- `GET /sales/quotations/:id`
 - `POST /sales/quotations`
 - `PATCH /sales/quotations/:id`
 - `POST /sales/quotations/:id/versions`

@@ -732,6 +732,49 @@ Latest Backend Platform Hardening verification:
 - Added security audit documentation at `docs/backend/security-audit.md`.
 - Added frontend API consumption documentation at `docs/frontend/api-consumption.md`.
 
+## Completed Frontend Projects & Tasks Pass
+
+- Added Projects screens under `apps/frontend/src/features/projects`.
+- Added Tasks screens under `apps/frontend/src/features/tasks`.
+- Added routes for `/projects`, `/projects/new`, `/projects/[id]`, `/projects/[id]/edit`, `/tasks`, `/tasks/new`, `/tasks/[id]`, `/tasks/[id]/edit`, and `/tasks/kanban`.
+- Added project list/search/filter/pagination, create/edit form, detail summary, status change, delete action, members tab, and task summary tab.
+- Added task list/search/filter/pagination, create/edit form, detail summary, status change, delete action, subtasks, comments, assignees, and attachment metadata tabs.
+- Added read-only kanban board from `GET /tasks/kanban`.
+- Updated permission-aware navigation to show separate Projects, Tasks, and Kanban entries.
+- Added frontend documentation at `docs/frontend/projects-tasks.md`.
+
+Latest Frontend Projects & Tasks verification:
+
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+
+## Completed Frontend Sales, Leads & Quotations Pass
+
+- Added Sales frontend screens under `apps/frontend/src/features/sales`.
+- Added routes for `/sales/leads`, `/sales/leads/new`, `/sales/leads/[id]`, `/sales/leads/[id]/edit`, `/sales/opportunities`, `/sales/opportunities/new`, `/sales/opportunities/[id]`, `/sales/opportunities/[id]/edit`, `/sales/quotations`, `/sales/quotations/new`, `/sales/quotations/[id]`, and `/sales/quotations/[id]/edit`.
+- Added lead list/search/filter/pagination, create/edit form, detail summary, status change, conversion, delete, activities, and notes.
+- Added opportunity list/search/filter/pagination, create/edit form, detail summary, status change, delete, and related quotations.
+- Added quotation list/search/filter/pagination, create form with dynamic line items, metadata edit form, detail summary, status change, delete, line item display, totals, and version metadata display.
+- Added read-only sales detail backend endpoints for leads, opportunities, and quotations because direct frontend detail routes were blocked without them.
+- Updated permission-aware navigation to show Leads, Opportunities, and Quotations.
+- Added frontend documentation at `docs/frontend/sales-leads-quotations.md`.
+
+Latest Frontend Sales, Leads & Quotations verification:
+
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+
+Latest Backend Verification After Sales Detail Endpoints:
+
+- `npm run prisma:validate`: passed. Prisma also reported the existing Prisma 7 config deprecation notice.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with existing Jest/Supertest/test typing warnings.
+- `npm test -- --runInBand`: 23 suites, 104 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+
 Latest Backend Security Cleanup & Frontend Readiness verification:
 
 - `npm audit --omit=dev`: passed, 0 vulnerabilities.
@@ -744,14 +787,12 @@ Latest Backend Security Cleanup & Frontend Readiness verification:
 
 ## Not Started
 
-- Frontend source code.
-- Authentication screens.
-- Dashboard UI.
+- Invoices, Billing & Receivables frontend screens.
 - Integration providers.
 - BullMQ queue wiring.
 - File/document binary storage abstraction.
 - Refactoring existing local approval flows into the generic approval engine.
-- Business modules beyond foundation, Clients / CRM, Tasks & Projects, Attendance, Leave & Holidays, Payroll & Salary, Finance, Expenses & Vendor Payments, Purchase, Inventory & Asset Management, Documents, Files & Knowledge Base, Communication, Announcements & Notifications, Calendar, Meetings & Scheduling, Helpdesk / Internal Tickets, Performance, Goals & Appraisals, Recruitment & Onboarding, Sales, Leads & Quotations, Invoices, Billing & Receivables, Approvals Workflow Engine, and Dashboard, Reports & Analytics.
+- Business frontend screens beyond foundation, Clients / CRM, Projects & Tasks, and Sales / Leads / Quotations.
 - Invoice PDF generation, email/WhatsApp delivery, full accounting ledger posting, payment gateway integration, bank files, and reconciliation.
 
 ## Next Build Milestone

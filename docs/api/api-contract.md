@@ -1486,6 +1486,7 @@ Existing `leads.*` permission keys remain seeded for future finer-grained policy
 ### Lead Routes
 
 - `GET /api/v1/sales/leads`
+- `GET /api/v1/sales/leads/:id`
 - `POST /api/v1/sales/leads`
 - `PATCH /api/v1/sales/leads/:id`
 - `DELETE /api/v1/sales/leads/:id`
@@ -1512,6 +1513,7 @@ Leads are duplicate-protected per company by email or phone when either value is
 
 - `POST /api/v1/sales/opportunity-stages`
 - `GET /api/v1/sales/opportunities`
+- `GET /api/v1/sales/opportunities/:id`
 - `POST /api/v1/sales/opportunities`
 - `PATCH /api/v1/sales/opportunities/:id`
 - `PATCH /api/v1/sales/opportunities/:id/status`
@@ -1527,6 +1529,7 @@ Opportunity statuses:
 ### Quotation Routes
 
 - `GET /api/v1/sales/quotations`
+- `GET /api/v1/sales/quotations/:id`
 - `POST /api/v1/sales/quotations`
 - `PATCH /api/v1/sales/quotations/:id`
 - `POST /api/v1/sales/quotations/:id/versions`

@@ -808,9 +808,9 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 - A fourteenth migration exists at `apps/backend/prisma/migrations/20260613175817_sales_leads_quotations`.
 - Sales permissions exist in seed: `sales.view`, `sales.manage`.
 - Sales lead source and stage endpoints exist under `/api/v1/sales/lead-sources` and `/api/v1/sales/lead-stages`.
-- Sales lead endpoints exist under `/api/v1/sales/leads`.
-- Sales opportunity endpoints exist under `/api/v1/sales/opportunities` and `/api/v1/sales/opportunity-stages`.
-- Sales quotation endpoints exist under `/api/v1/sales/quotations`.
+- Sales lead endpoints exist under `/api/v1/sales/leads`, including `/api/v1/sales/leads/:id`.
+- Sales opportunity endpoints exist under `/api/v1/sales/opportunities`, including `/api/v1/sales/opportunities/:id`, and `/api/v1/sales/opportunity-stages`.
+- Sales quotation endpoints exist under `/api/v1/sales/quotations`, including `/api/v1/sales/quotations/:id`.
 - Sales, Leads & Quotations module docs exist at `docs/modules/sales-leads-quotations.md`.
 - A fifteenth migration exists at `apps/backend/prisma/migrations/20260613181910_invoices_billing_receivables`.
 - Billing permissions exist in seed: `billing.view`, `billing.manage`.
@@ -862,3 +862,25 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 13. Add GST filing, purchase invoice posting, invoice/quotation PDF generation, payment gateway integration, reconciliation, and bank payment files only when explicitly scoped.
 14. Add real report export generation, BullMQ export workers, and file storage integration only when explicitly scoped.
 15. Keep frontend blocked until these backend APIs settle.
+
+## Latest Frontend State
+
+- Frontend foundation exists under `apps/frontend`.
+- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, and Sales / Leads / Quotations frontend passes are implemented.
+- Projects routes exist at `/projects`, `/projects/new`, `/projects/[id]`, and `/projects/[id]/edit`.
+- Tasks routes exist at `/tasks`, `/tasks/new`, `/tasks/[id]`, `/tasks/[id]/edit`, and `/tasks/kanban`.
+- Projects and Tasks use `projects.*` and `tasks.*` permissions from `/auth/me`.
+- Task kanban is read-only in this pass; drag-and-drop status changes can be added later if desired.
+- Project member and task assignee forms currently use employee lookup only because a dedicated frontend user picker is not available.
+- Sales routes exist at `/sales/leads`, `/sales/opportunities`, and `/sales/quotations` with list, create, edit, and detail pages.
+- Sales screens use `sales.view` for reads and `sales.manage` for mutations.
+- Opportunity stage list lookup is still missing in the backend; the opportunity form uses a raw optional stage ID.
+- Quotation edit is metadata-only because backend quotation update does not accept line item updates.
+
+## Next Frontend Work
+
+1. Build Invoices, Billing & Receivables screens.
+2. Add a reusable user lookup component if owner assignment should support direct user selection.
+3. Add an opportunity stage list endpoint and frontend lookup if opportunity stages should be selectable by name.
+4. Add quotation line item update support only if the backend API is extended.
+5. Add real file upload only after the document/file storage abstraction is scoped.
