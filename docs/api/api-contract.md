@@ -928,6 +928,7 @@ Notification permissions:
 ### Announcement Routes
 
 - `GET /api/v1/announcements`
+- `GET /api/v1/announcements/:id`
 - `POST /api/v1/announcements`
 - `PATCH /api/v1/announcements/:id`
 - `PATCH /api/v1/announcements/:id/status`
@@ -1089,7 +1090,7 @@ Reminders also support:
 
 ### Communication And Notification Exclusions
 
-Communication and notification APIs do not integrate email, SMS, WhatsApp, push, or other providers yet. They do not enqueue BullMQ jobs, send real messages, execute reminder schedules, or implement frontend screens.
+Communication and notification APIs do not integrate email, SMS, WhatsApp, push, or other providers yet. They do not enqueue BullMQ jobs, send real messages, execute reminder schedules, or provide real-time delivery.
 
 ## Calendar, Meetings & Scheduling APIs
 

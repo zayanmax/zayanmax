@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { CommunicationNotificationsService } from './communication-notifications.service';
 import {
   AnnouncementAudienceTypeDto,
@@ -154,6 +155,35 @@ describe('CommunicationNotificationsService', () => {
         }),
       }),
     );
+  });
+
+  it('loads announcement detail with audience metadata and rejects missing records', async () => {
+    prisma.companyAnnouncement.findFirst.mockResolvedValueOnce({
+      id: 'announcement-id',
+      title: 'Policy update',
+      audiences: [{ audienceType: AnnouncementAudienceTypeDto.ALL_COMPANY }],
+    });
+    const service = new CommunicationNotificationsService(prisma as never);
+
+    const result = await service.findAnnouncement(
+      'company-id',
+      'announcement-id',
+    );
+
+    expect(result.id).toBe('announcement-id');
+    expect(prisma.companyAnnouncement.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'announcement-id',
+        companyId: 'company-id',
+        deletedAt: null,
+      },
+      include: { audiences: true },
+    });
+
+    prisma.companyAnnouncement.findFirst.mockResolvedValueOnce(null);
+    await expect(
+      service.findAnnouncement('company-id', 'missing-announcement'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('records announcement read receipts idempotently', async () => {

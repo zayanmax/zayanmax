@@ -866,7 +866,7 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 ## Latest Frontend State
 
 - Frontend foundation exists under `apps/frontend`.
-- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendor Payments, and Purchase / Inventory / Asset Management frontend passes are implemented.
+- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendor Payments, Purchase / Inventory / Asset Management, Documents / Knowledge Base, and Communication / Notifications frontend passes are implemented.
 - Projects routes exist at `/projects`, `/projects/new`, `/projects/[id]`, and `/projects/[id]/edit`.
 - Tasks routes exist at `/tasks`, `/tasks/new`, `/tasks/[id]`, `/tasks/[id]/edit`, and `/tasks/kanban`.
 - Projects and Tasks use `projects.*` and `tasks.*` permissions from `/auth/me`.
@@ -902,10 +902,20 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 - Document and article tag update flows are backend pending; tags are assigned during create only.
 - Latest Documents/Knowledge Base frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
 - Latest backend verification after Documents/Knowledge Base detail endpoints passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
+- Communication routes exist at `/communication`, `/communication/announcements`, `/communication/announcements/new`, `/communication/announcements/[id]`, `/communication/announcements/[id]/edit`, `/communication/notification-templates`, and `/communication/reminders`.
+- Notifications routes exist at `/notifications` and `/settings/notification-preferences`.
+- Communication screens use `communications.view` for reads and `communications.manage` for create/update/status actions.
+- Notifications screens use `notifications.view` for reads and `notifications.manage` for template create, preference update, and reminder create.
+- Backend gained a minimal frontend-blocking read endpoint for announcement detail: `GET /api/v1/announcements/:id`.
+- Announcement audience targeting is create-only because backend announcement update does not update audience rows.
+- Notification templates and reminders are list/create only because backend update/delete routes are not exposed.
+- Notification center supports individual read/unread actions only; there is no mark-all-read endpoint.
+- Latest Communication/Notifications frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
+- Latest backend verification after announcement detail endpoint passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
 
 ## Next Frontend Work
 
-1. Build Communication, Announcements & Notifications screens.
+1. Build Calendar, Meetings & Resource Booking screens.
 2. Add a reusable user lookup component if owner assignment should support direct user selection.
 3. Add an opportunity stage list endpoint and frontend lookup if opportunity stages should be selectable by name.
 4. Add quotation line item update support only if the backend API is extended.

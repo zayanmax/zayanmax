@@ -900,13 +900,43 @@ Latest Backend Verification After Documents/Knowledge Base Detail Endpoints:
 - `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
 - `npm run build`: passed.
 
+## Completed Frontend Communication, Announcements & Notifications Pass
+
+- Added Communication frontend screens under `apps/frontend/src/features/communication`.
+- Added Notifications frontend screens under `apps/frontend/src/features/notifications`.
+- Added routes for `/communication`, `/communication/announcements`, `/communication/announcements/new`, `/communication/announcements/[id]`, `/communication/announcements/[id]/edit`, `/notifications`, `/communication/notification-templates`, `/communication/reminders`, and `/settings/notification-preferences`.
+- Added communication overview cards derived from announcement, notification, reminder, and template list APIs.
+- Added announcement list/search/status-filter/pagination, create/edit forms, detail page, read receipts, mark-read action, and draft/publish/archive status actions.
+- Added notification center list/search/filter/pagination with individual read/unread actions.
+- Added notification template list/create, notification preference view/upsert, and reminder list/create screens.
+- Added a minimal backend `GET /api/v1/announcements/:id` endpoint because announcement detail/edit routes were blocked without it.
+- Updated permission-aware navigation to show Communication, Announcements, Notifications, Notification Templates, Reminders, and Notification Preferences.
+- Kept the frontend metadata-only: no external provider sending, BullMQ workers, scheduled execution, WebSocket delivery, or cross-module integrations.
+- Added frontend documentation at `docs/frontend/communication-notifications.md`.
+- Added `apps/frontend/tsconfig.typecheck.json` and updated `npm run typecheck` to avoid stale `.next/dev/types` generated route files while leaving Next's build config intact.
+
+Latest Frontend Communication, Announcements & Notifications verification:
+
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+
+Latest Backend Verification After Announcement Detail Endpoint:
+
+- `npm run prisma:validate`: passed. Prisma also reported the existing Prisma 7 config deprecation notice.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with existing Jest/Supertest/test typing warnings.
+- `npm test -- --runInBand`: 23 suites, 108 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+
 ## Not Started
 
 - Integration providers.
 - BullMQ queue wiring.
 - File/document binary storage abstraction.
 - Refactoring existing local approval flows into the generic approval engine.
-- Remaining business frontend screens beyond the completed foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendors, Purchase / Inventory / Assets, and Documents / Knowledge Base passes.
+- Remaining business frontend screens beyond the completed foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendors, Purchase / Inventory / Assets, Documents / Knowledge Base, and Communication / Notifications passes.
 - Invoice PDF generation, email/WhatsApp delivery, full accounting ledger posting, payment gateway integration, bank files, and reconciliation.
 
 ## Next Build Milestone

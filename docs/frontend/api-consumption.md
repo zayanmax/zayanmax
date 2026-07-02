@@ -151,6 +151,16 @@ Core list/detail:
 - `GET /api/v1/tasks/:id`
 - `GET /api/v1/billing/invoices`
 
+Communication and notifications:
+
+- `GET /api/v1/announcements`
+- `GET /api/v1/announcements/:id`
+- `GET /api/v1/announcements/:id/read-receipts`
+- `GET /api/v1/notifications`
+- `GET /api/v1/notification-templates`
+- `GET /api/v1/notification-preferences`
+- `GET /api/v1/reminders`
+
 ## OpenAPI Generation Notes
 
 `/api/docs-json` includes bearer auth, module tags, standard response/error schemas, and examples for high-use DTOs including auth, dashboard filters, employees, clients, projects, tasks, and invoices.

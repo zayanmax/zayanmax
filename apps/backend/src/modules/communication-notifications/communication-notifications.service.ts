@@ -104,6 +104,15 @@ export class CommunicationNotificationsService {
     return this.paginated(data, page, limit, total);
   }
 
+  async findAnnouncement(companyId: string, id: string) {
+    const announcement = await this.prisma.companyAnnouncement.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: { audiences: true },
+    });
+    if (!announcement) throw new NotFoundException('Announcement not found');
+    return announcement;
+  }
+
   async updateAnnouncement(
     companyId: string,
     id: string,

@@ -56,6 +56,18 @@ export class CommunicationNotificationsController {
     );
   }
 
+  @RequirePermissions('communications.view')
+  @Get('announcements/:id')
+  findAnnouncement(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.communicationNotificationsService.findAnnouncement(
+      user.companyId,
+      id,
+    );
+  }
+
   @RequirePermissions('communications.manage')
   @Post('announcements')
   createAnnouncement(

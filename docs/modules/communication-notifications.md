@@ -1,10 +1,10 @@
 # Communication, Announcements & Notifications Module
 
-Last updated: 2026-06-13
+Last updated: 2026-07-02
 
 ## Scope
 
-Implemented backend-only Communication, Announcements & Notifications foundation.
+Implemented Communication, Announcements & Notifications backend foundation and frontend metadata screens.
 
 Included:
 
@@ -27,11 +27,12 @@ Included:
 
 Excluded for now:
 
-- Frontend screens.
 - Real email, SMS, WhatsApp, push, or provider integrations.
 - BullMQ workers.
 - Actual scheduled sends.
 - Real notification delivery processing.
+- Real-time notification delivery.
+- Calendar, approval, dashboard, and reports integrations.
 
 ## Prisma Models
 
@@ -90,6 +91,7 @@ No role names are hardcoded for access checks.
 Announcement routes:
 
 - `GET /api/v1/announcements`
+- `GET /api/v1/announcements/:id`
 - `POST /api/v1/announcements`
 - `PATCH /api/v1/announcements/:id`
 - `PATCH /api/v1/announcements/:id/status`
@@ -122,6 +124,22 @@ Reminder routes:
 
 - `GET /api/v1/reminders`
 - `POST /api/v1/reminders`
+
+## Frontend Screens
+
+Implemented under `apps/frontend`:
+
+- `/communication`
+- `/communication/announcements`
+- `/communication/announcements/new`
+- `/communication/announcements/:id`
+- `/communication/announcements/:id/edit`
+- `/notifications`
+- `/communication/notification-templates`
+- `/settings/notification-preferences`
+- `/communication/reminders`
+
+Frontend behavior remains metadata-only. It does not send external messages, enqueue workers, execute scheduled reminders, or provide WebSocket delivery.
 
 ## Filters
 
