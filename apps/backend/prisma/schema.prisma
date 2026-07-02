@@ -663,6 +663,8 @@ model Company {
   approvalStepInstances        ApprovalStepInstance[]
   approvalActions              ApprovalActionRecord[]
   reportExportRequests         ReportExportRequest[]
+  userSessions                 UserSession[]
+  passwordResetTokens          PasswordResetToken[]
 
   @@index([status])
   @@index([createdAt])
@@ -855,6 +857,8 @@ model User {
   delegatedApprovalSteps      ApprovalStepInstance[]       @relation("ApprovalStepInstanceDelegatedToUser")
   approvalActions             ApprovalActionRecord[]       @relation("ApprovalActionActorUser")
   reportExportRequests        ReportExportRequest[]        @relation("ReportExportRequestRequestedByUser")
+  sessions                    UserSession[]
+  passwordResetTokens         PasswordResetToken[]
 
   @@index([companyId])
   @@index([email])
@@ -928,6 +932,52 @@ model AuditLog {
   @@index([actorId])
   @@index([entityType])
   @@index([entityId])
+  @@index([createdAt])
+}
+
+model UserSession {
+  id               String    @id @default(uuid()) @db.Uuid
+  companyId        String    @db.Uuid
+  userId           String    @db.Uuid
+  refreshTokenHash String
+  deviceName       String?
+  ipAddress        String?
+  userAgent        String?
+  lastUsedAt       DateTime?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  company          Company   @relation(fields: [companyId], references: [id])
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  companyId String    @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String
+  requestedIpAddress String?
+  requestedUserAgent String?
+  expiresAt DateTime
+  usedAt    DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  company   Company   @relation(fields: [companyId], references: [id])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([usedAt])
+  @@index([revokedAt])
   @@index([createdAt])
 }
 

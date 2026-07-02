@@ -10,6 +10,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -25,6 +26,8 @@ import {
   UpsertLeaveBalanceDto,
 } from './dto/leave.dto';
 
+@ApiTags('Attendance & Leave')
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('leaves')
 export class LeavesController {

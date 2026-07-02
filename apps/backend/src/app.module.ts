@@ -19,6 +19,7 @@ import { DocumentsKnowledgeBaseModule } from './modules/documents-knowledge-base
 import { EmployeesModule } from './modules/employees/employees.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { HelpdeskTicketsModule } from './modules/helpdesk-tickets/helpdesk-tickets.module';
+import { HealthModule } from './modules/health/health.module';
 import { InvoicesBillingReceivablesModule } from './modules/invoices-billing-receivables/invoices-billing-receivables.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
@@ -57,6 +58,7 @@ import { UsersModule } from './modules/users/users.module';
     EmployeesModule,
     FinanceModule,
     HelpdeskTicketsModule,
+    HealthModule,
     InvoicesBillingReceivablesModule,
     PurchaseInventoryAssetsModule,
     RecruitmentOnboardingModule,

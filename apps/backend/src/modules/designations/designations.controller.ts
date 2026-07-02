@@ -7,6 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -16,6 +17,8 @@ import { DesignationsService } from './designations.service';
 import { CreateDesignationDto } from './dto/create-designation.dto';
 import { UpdateDesignationDto } from './dto/update-designation.dto';
 
+@ApiTags('Designations')
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('designations')
 export class DesignationsController {

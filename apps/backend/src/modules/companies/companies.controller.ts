@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -8,6 +9,8 @@ import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
+@ApiTags('Companies')
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('companies')
 export class CompaniesController {

@@ -10,6 +10,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -34,6 +35,8 @@ import {
 } from './dto/communication-notifications.dto';
 import { CommunicationNotificationsService } from './communication-notifications.service';
 
+@ApiTags('Communications & Notifications')
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller()
 export class CommunicationNotificationsController {

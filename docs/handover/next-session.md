@@ -36,6 +36,7 @@ The project now has:
 - Invoices, Billing & Receivables module with invoice series, invoices, invoice items, quotation conversion, payment receipts, receipt allocations, credit/debit note metadata, receivable summaries, client statements, and aging summaries.
 - Approvals Workflow Engine module with workflow definitions, workflow steps, approval requests, step instances, action records, delegation metadata, escalation metadata, pending approvals, and entity history.
 - Dashboard, Reports & Analytics module with company, HR, project/task, CRM/sales, finance, inventory/assets, helpdesk, approvals, and calendar dashboard summaries plus report registry and export request metadata.
+- Backend platform hardening with Swagger/OpenAPI, health/readiness checks, session/device metadata foundation, password change, password reset token metadata, logout-all, and RBAC permission audit coverage.
 - Unit tests and e2e tests.
 
 No frontend has been created.
@@ -436,6 +437,30 @@ Dashboard, Reports & Analytics scope implemented:
 
 Do not start frontend screens, actual CSV/XLSX/PDF generation, BullMQ export workers, real-time dashboard updates, scheduled reports, or file storage integration unless explicitly asked.
 
+Backend Stabilization, API Documentation & Platform Hardening scope implemented:
+
+- Swagger UI at `/api/docs`.
+- OpenAPI JSON at `/api/docs-json`.
+- Swagger bearer JWT auth support.
+- Standard response and error schemas in OpenAPI metadata.
+- Health summary endpoint at `/api/v1/health`.
+- Liveness endpoint at `/api/v1/health/live`.
+- Readiness endpoint at `/api/v1/health/ready`.
+- Prisma database readiness check.
+- Redis TCP readiness check.
+- Version/build metadata placeholders through `BUILD_VERSION` and `BUILD_SHA`.
+- Session/device metadata table through `UserSession`.
+- Password reset token metadata table through `PasswordResetToken`.
+- Login now returns `sessionId`.
+- Refresh accepts optional `sessionId`.
+- Logout-all endpoint exists.
+- Password change endpoint exists.
+- Password reset request/confirm metadata endpoints exist, with no real delivery provider.
+- RBAC audit confirmed seeded permissions cover implemented controller permission keys.
+- Focused e2e tests cover Swagger/health, denied access, and auth session/password flows.
+
+Do not start real password reset delivery, OAuth, 2FA, Redis-backed session cache, or frontend auth screens unless explicitly asked.
+
 ## Completed Validation
 
 - `npm run prisma:generate`
@@ -640,6 +665,16 @@ Latest Dashboard, Reports & Analytics validation:
 - `npm run test:e2e -- --runInBand`: 1 suite, 18 tests passed.
 - `npm run build`: passed.
 
+Latest Backend Platform Hardening validation:
+
+- `npm run prisma:validate`: passed.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with warnings in test typing.
+- `npm test -- --runInBand`: 21 suites, 100 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+- `npm audit --omit=dev`: still reports high-severity Multer advisories inherited through Nest platform packages; the forced npm fix would be breaking and was not applied.
+
 Lint exits successfully with warnings in Jest/Supertest typing only.
 
 ## What Changed
@@ -753,19 +788,26 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 - Report registry and metadata endpoints exist under `/api/v1/reports/registry` and `/api/v1/reports/metadata/:reportType`.
 - Report export request metadata endpoints exist under `/api/v1/reports/export-requests`.
 - Dashboard, Reports & Analytics module docs exist at `docs/modules/dashboard-reports.md`.
+- Swagger/OpenAPI docs exist at `/api/docs` and `/api/docs-json`.
+- Health/readiness endpoints exist under `/api/v1/health`.
+- An eighteenth migration exists at `apps/backend/prisma/migrations/20260702103000_platform_hardening_auth_sessions`.
+- Auth endpoints now include `/api/v1/auth/logout-all`, `/api/v1/auth/change-password`, `/api/v1/auth/password-reset/request`, and `/api/v1/auth/password-reset/confirm`.
+- Platform hardening docs exist at `docs/backend/platform-hardening.md`, `docs/api/swagger-openapi.md`, and `docs/security/auth-rbac.md`.
 
 ## Next Backend Work
 
 1. Add more unit/e2e tests around role and permission management.
 2. Add CRUD tests for branches, departments, designations, and companies.
 3. Add optional update/delete routes for client contacts, notes, document metadata, project members, task assignees, comments, attachments, leave types, leave balances, attendance corrections, salary structures, salary assignments, advances, payroll periods, calendar attendees, resources, bookings, reminders, helpdesk categories, subcategories, comments, notes, attachments, performance metadata, recruitment metadata, sales child metadata, billing child metadata, and approval child metadata if product needs them.
-4. Add session/device tracking tables if auth session management should be complete now.
-5. Add a shared audit context helper so controllers do not pass IP/user-agent manually.
-6. Add Redis/BullMQ queue module.
-7. Add file/document binary storage abstraction before real client, task, or document binary uploads.
-8. Refactor existing local approval flows into the generic approval engine only when explicitly scoped.
-9. Add automatic dynamic approver resolution and escalation workers only when explicitly scoped.
-10. Add accounting ledger integration only when the full accounting scope starts.
-11. Add GST filing, purchase invoice posting, invoice/quotation PDF generation, payment gateway integration, reconciliation, and bank payment files only when explicitly scoped.
-12. Add real report export generation, BullMQ export workers, and file storage integration only when explicitly scoped.
-13. Keep frontend blocked until these backend APIs settle.
+4. Add a shared audit context helper so controllers do not pass IP/user-agent manually.
+5. Add targeted DB indexes from real query plans where list endpoints need more than existing company/status/date filters.
+6. Resolve the Multer/Nest dependency audit advisories when a non-breaking upgrade path is available.
+7. Add Redis/BullMQ queue module.
+8. Add file/document binary storage abstraction before real client, task, or document binary uploads.
+9. Add real password reset delivery only when email/SMS/WhatsApp provider scope starts.
+10. Refactor existing local approval flows into the generic approval engine only when explicitly scoped.
+11. Add automatic dynamic approver resolution and escalation workers only when explicitly scoped.
+12. Add accounting ledger integration only when the full accounting scope starts.
+13. Add GST filing, purchase invoice posting, invoice/quotation PDF generation, payment gateway integration, reconciliation, and bank payment files only when explicitly scoped.
+14. Add real report export generation, BullMQ export workers, and file storage integration only when explicitly scoped.
+15. Keep frontend blocked until these backend APIs settle.

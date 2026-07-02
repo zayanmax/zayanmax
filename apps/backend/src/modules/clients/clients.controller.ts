@@ -11,6 +11,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -27,6 +28,8 @@ import { CreateClientNoteDto } from './dto/create-client-note.dto';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 
+@ApiTags('Clients')
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('clients')
 export class ClientsController {

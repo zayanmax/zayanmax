@@ -11,6 +11,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -42,6 +43,8 @@ import {
 } from './dto/sales-leads-quotations.dto';
 import { SalesLeadsQuotationsService } from './sales-leads-quotations.service';
 
+@ApiTags('Sales')
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('sales')
 export class SalesLeadsQuotationsController {

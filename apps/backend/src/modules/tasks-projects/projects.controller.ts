@@ -11,6 +11,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -24,6 +25,8 @@ import { ProjectQueryDto } from './dto/project-query.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { TasksProjectsService } from './tasks-projects.service';
 
+@ApiTags('Projects & Tasks')
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('projects')
 export class ProjectsController {

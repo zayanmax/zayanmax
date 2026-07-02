@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -7,6 +8,8 @@ import type { CurrentUser } from '../../common/types/current-user.type';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { RolesService } from './roles.service';
 
+@ApiTags('Roles')
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('roles')
 export class RolesController {

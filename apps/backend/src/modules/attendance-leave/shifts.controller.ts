@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -16,6 +17,8 @@ import type { CurrentUser } from '../../common/types/current-user.type';
 import { AttendanceLeaveService } from './attendance-leave.service';
 import { CreateShiftDto } from './dto/create-shift.dto';
 
+@ApiTags('Attendance & Leave')
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('shifts')
 export class ShiftsController {

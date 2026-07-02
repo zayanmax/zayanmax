@@ -79,6 +79,53 @@ Use permission decorators or guards by permission key:
 
 Do not check access by role name only.
 
+## Swagger / OpenAPI
+
+- Swagger UI: `GET /api/docs`
+- OpenAPI JSON: `GET /api/docs-json`
+
+Swagger includes bearer JWT auth, module tags, and reusable standard response/error schemas.
+
+## Health And Readiness APIs
+
+- `GET /api/v1/health`
+- `GET /api/v1/health/live`
+- `GET /api/v1/health/ready`
+
+Health responses include:
+
+- service name
+- status
+- uptime
+- timestamp
+- version and build metadata placeholders
+- database readiness check
+- Redis readiness check
+
+Readiness can return `503` when a dependency check is degraded.
+
+## Auth APIs
+
+Public:
+
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/password-reset/request`
+- `POST /api/v1/auth/password-reset/confirm`
+
+Authenticated:
+
+- `POST /api/v1/auth/logout`
+- `POST /api/v1/auth/logout-all`
+- `POST /api/v1/auth/change-password`
+- `GET /api/v1/auth/me`
+
+Login returns `accessToken`, `refreshToken`, `sessionId`, and `user`.
+
+Refresh accepts optional `sessionId` for session-aware refresh token rotation.
+
+Password reset request stores token metadata only and does not send email, SMS, or WhatsApp yet.
+
 ## Clients / CRM APIs
 
 All routes require JWT auth and permission-key guards.

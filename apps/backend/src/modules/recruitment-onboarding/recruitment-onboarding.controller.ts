@@ -10,6 +10,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { CurrentUserDecorator } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -38,6 +39,8 @@ import {
 } from './dto/recruitment-onboarding.dto';
 import { RecruitmentOnboardingService } from './recruitment-onboarding.service';
 
+@ApiTags('Recruitment')
+@ApiBearerAuth('bearer')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('recruitment')
 export class RecruitmentOnboardingController {

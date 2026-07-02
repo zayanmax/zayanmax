@@ -2,9 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import * as bcrypt from 'bcrypt';
 import { AppModule } from './../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
+import { setupSwagger } from '../src/common/openapi/swagger';
+import { PrismaService } from '../src/database/prisma.service';
 
 jest.setTimeout(30000);
 
@@ -27,6 +30,7 @@ describe('AppController (e2e)', () => {
     );
     app.useGlobalFilters(new HttpExceptionFilter());
     app.useGlobalInterceptors(new ResponseInterceptor());
+    setupSwagger(app);
     await app.init();
   });
 
@@ -41,6 +45,92 @@ describe('AppController (e2e)', () => {
           service: 'zayan-max-backend',
           status: 'ok',
         },
+      });
+  });
+
+  it('exposes Swagger and health/readiness endpoints', async () => {
+    await request(app.getHttpServer())
+      .get('/api/docs-json')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.openapi).toEqual(expect.any(String));
+        expect(response.body.components.securitySchemes.bearer).toEqual(
+          expect.objectContaining({ type: 'http', scheme: 'bearer' }),
+        );
+        expect(response.body.components.schemas.StandardErrorResponse).toEqual(
+          expect.any(Object),
+        );
+      });
+
+    await request(app.getHttpServer())
+      .get('/api/docs')
+      .expect(200)
+      .expect((response) => {
+        expect(response.text).toContain('Swagger UI');
+      });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/health')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.data).toEqual(
+          expect.objectContaining({
+            status: expect.any(String),
+            service: 'zayan-max-backend',
+            version: expect.any(String),
+            checks: expect.objectContaining({
+              database: expect.objectContaining({ status: expect.any(String) }),
+              redis: expect.objectContaining({ status: expect.any(String) }),
+            }),
+          }),
+        );
+      });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/health/live')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.data.status).toBe('ok');
+      });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/health/ready')
+      .expect((response) => {
+        expect([200, 503]).toContain(response.status);
+        expect(response.body.data ?? response.body).toEqual(expect.any(Object));
+      });
+  });
+
+  it('denies permission-gated APIs for users without required permissions', async () => {
+    const prisma = app.get(PrismaService);
+    const suffix = Date.now();
+    const email = `limited-${suffix}@zayan.test`;
+    await prisma.user.create({
+      data: {
+        companyId: '00000000-0000-0000-0000-000000000001',
+        email,
+        passwordHash: await bcrypt.hash('Password123', 10),
+        isEmailVerified: true,
+      },
+    });
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email, password: 'Password123' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/employees')
+      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .expect(403)
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            success: false,
+            errorCode: 'FORBIDDEN',
+            message: 'Permission denied',
+          }),
+        );
       });
   });
 
@@ -3206,6 +3296,65 @@ describe('AppController (e2e)', () => {
         );
         expect(response.body.meta.total).toBeGreaterThanOrEqual(1);
       });
+  });
+
+  it('supports password change, password reset metadata, and logout-all sessions', async () => {
+    const firstLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@zayan.test', password: 'Password123' })
+      .expect(201);
+
+    expect(firstLogin.body.data.sessionId).toEqual(expect.any(String));
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/password-reset/request')
+      .send({ email: 'admin@zayan.test' })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.data).toEqual({
+          resetRequested: true,
+          delivery: 'metadata_only',
+        });
+      });
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/change-password')
+      .set('Authorization', `Bearer ${firstLogin.body.data.accessToken}`)
+      .send({
+        currentPassword: 'Password123',
+        newPassword: 'Password456',
+      })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.data).toEqual({ passwordChanged: true });
+      });
+
+    const secondLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@zayan.test', password: 'Password456' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/logout-all')
+      .set('Authorization', `Bearer ${secondLogin.body.data.accessToken}`)
+      .expect(201)
+      .expect((response) => {
+        expect(response.body.data).toEqual({ loggedOutAllSessions: true });
+      });
+
+    const restoreLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: 'admin@zayan.test', password: 'Password456' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/change-password')
+      .set('Authorization', `Bearer ${restoreLogin.body.data.accessToken}`)
+      .send({
+        currentPassword: 'Password456',
+        newPassword: 'Password123',
+      })
+      .expect(201);
   });
 
   afterEach(async () => {

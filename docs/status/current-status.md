@@ -401,6 +401,28 @@ Read and summarized:
 - Added module documentation at `docs/modules/dashboard-reports.md`.
 - Added implementation plan at `docs/superpowers/plans/2026-07-02-dashboard-reports-analytics-module.md`.
 
+## Completed Backend Stabilization, API Documentation & Platform Hardening Pass
+
+- Added Swagger/OpenAPI support at `/api/docs` and `/api/docs-json`.
+- Added module tags to backend controllers for API discoverability.
+- Added bearer JWT support and standard success/error schemas to Swagger.
+- Added Health module with `/api/v1/health`, `/api/v1/health/live`, and `/api/v1/health/ready`.
+- Added database readiness check through Prisma.
+- Added Redis readiness check through TCP connectivity to `REDIS_URL`.
+- Added app version/build metadata placeholders through `BUILD_VERSION` and `BUILD_SHA`.
+- Added `UserSession` metadata table for refresh-token/session/device tracking foundation.
+- Added `PasswordResetToken` metadata table for password reset foundation.
+- Added migration `apps/backend/prisma/migrations/20260702103000_platform_hardening_auth_sessions`.
+- Updated login to return `sessionId`.
+- Updated refresh to accept optional `sessionId` and rotate matching session metadata.
+- Added logout-all-sessions endpoint.
+- Added password change endpoint with audit logging and session revocation.
+- Added password reset request/confirm metadata endpoints without real email/SMS/WhatsApp delivery.
+- Verified controller permission usage against seeded permission keys: 64 usages, 69 seeded keys, 0 missing.
+- Added e2e coverage for Swagger/health, a denied-access RBAC case, and auth session/password flows.
+- Added documentation at `docs/backend/platform-hardening.md`, `docs/api/swagger-openapi.md`, and `docs/security/auth-rbac.md`.
+- Updated backend README with local setup, API docs, and verification scripts.
+
 ## Local Runtime
 
 Backend folder:
@@ -642,6 +664,16 @@ Latest Dashboard, Reports & Analytics verification:
 - `npm run test:e2e -- --runInBand`: 1 suite, 18 tests passed.
 - `npm run build`: passed.
 
+Latest Backend Platform Hardening verification:
+
+- `npm run prisma:validate`: passed. Prisma also reported the existing Prisma 7 config deprecation/update notice.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with warnings only in existing Jest/Supertest/test-harness typing plus the new auth/e2e test warnings.
+- `npm test -- --runInBand`: 21 suites, 100 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+- Additional `npm audit --omit=dev`: failed on high-severity Multer advisories inherited through Nest platform packages; npm's suggested `--force` fix would apply breaking dependency changes, so it was not applied in this pass.
+
 ## Not Started
 
 - Frontend source code.
@@ -661,11 +693,12 @@ Continue backend before frontend:
 1. Add request context helper for consistent actor/IP/user-agent audit metadata.
 2. Add fuller CRUD coverage and tests for companies, branches, departments, designations, roles, permissions, and child-record update/delete if needed.
 3. Add optional update/delete endpoints for attendance corrections, leave types, leave balances, leave requests, salary structures, salary assignments, advances, and payroll periods if product needs them.
-4. Add refresh-token rotation/session tracking table if device/session tracking is needed now.
-5. Add password reset and optional 2FA placeholders behind clear module boundaries.
-6. Add BullMQ/Redis queue module and notification/file-service abstractions.
-7. Refactor existing local approval flows into the generic approval engine only when explicitly scoped.
-8. Add automatic dynamic approver resolution and escalation workers only when explicitly scoped.
-9. Add accounting ledger integration only when the full accounting scope starts.
-10. Add GST filing, purchase invoice posting, invoice/quotation PDF generation, payment gateway integration, reconciliation, and bank payment files only when explicitly scoped.
-11. Continue backend modules before frontend unless explicitly redirected.
+4. Add targeted DB indexes from real query plans where list endpoints need more than existing company/status/date filters.
+5. Resolve the Multer/Nest dependency audit advisories when a non-breaking upgrade path is available.
+6. Add optional 2FA placeholders behind clear module boundaries if required.
+7. Add BullMQ/Redis queue module and notification/file-service abstractions.
+8. Refactor existing local approval flows into the generic approval engine only when explicitly scoped.
+9. Add automatic dynamic approver resolution and escalation workers only when explicitly scoped.
+10. Add accounting ledger integration only when the full accounting scope starts.
+11. Add GST filing, purchase invoice posting, invoice/quotation PDF generation, payment gateway integration, reconciliation, and bank payment files only when explicitly scoped.
+12. Continue backend modules before frontend unless explicitly redirected.
