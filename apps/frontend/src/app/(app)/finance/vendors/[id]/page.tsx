@@ -1,5 +1,10 @@
 import { VendorDetailPage } from "@/features/finance/vendor-detail-page";
 
-export default function VendorDetailRoute({ params }: { params: { id: string } }) {
-  return <VendorDetailPage vendorId={params.id} />;
+export default async function VendorDetailRoute({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <VendorDetailPage vendorId={id} />;
 }

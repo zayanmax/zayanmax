@@ -636,6 +636,8 @@ Asset permissions:
 
 - `GET /api/v1/purchases/requests`
 - `POST /api/v1/purchases/requests`
+- `GET /api/v1/purchases/requests/:id`
+- `PATCH /api/v1/purchases/requests/:id`
 - `PATCH /api/v1/purchases/requests/:id/status`
 
 Purchase request statuses:
@@ -651,6 +653,8 @@ Purchase request statuses:
 
 - `GET /api/v1/purchases/orders`
 - `POST /api/v1/purchases/orders`
+- `GET /api/v1/purchases/orders/:id`
+- `PATCH /api/v1/purchases/orders/:id`
 - `PATCH /api/v1/purchases/orders/:id/status`
 
 Purchase order statuses:
@@ -665,6 +669,7 @@ Purchase order statuses:
 
 - `GET /api/v1/purchases/goods-received-notes`
 - `POST /api/v1/purchases/goods-received-notes`
+- `GET /api/v1/purchases/goods-received-notes/:id`
 
 Goods received notes update inventory stock through `IN` stock movements for received inventory items.
 
@@ -672,10 +677,15 @@ Goods received notes update inventory stock through `IN` stock movements for rec
 
 - `GET /api/v1/inventory/categories`
 - `POST /api/v1/inventory/categories`
+- `GET /api/v1/inventory/categories/:id`
+- `PATCH /api/v1/inventory/categories/:id`
 - `GET /api/v1/inventory/items`
 - `POST /api/v1/inventory/items`
+- `GET /api/v1/inventory/items/:id`
+- `PATCH /api/v1/inventory/items/:id`
 - `GET /api/v1/inventory/movements`
 - `POST /api/v1/inventory/movements`
+- `GET /api/v1/inventory/movements/:id`
 - `POST /api/v1/inventory/stock-adjustments`
 
 Stock movement types:
@@ -690,8 +700,14 @@ Inventory item APIs store `lowStockThreshold` for later dashboard/UI reporting.
 
 - `GET /api/v1/assets/categories`
 - `POST /api/v1/assets/categories`
+- `GET /api/v1/assets/categories/:id`
+- `PATCH /api/v1/assets/categories/:id`
 - `GET /api/v1/assets`
 - `POST /api/v1/assets`
+- `GET /api/v1/assets/:id`
+- `PATCH /api/v1/assets/:id`
+- `GET /api/v1/assets/assignments`
+- `GET /api/v1/assets/maintenance`
 - `POST /api/v1/assets/:id/assign`
 - `POST /api/v1/assets/:id/maintenance`
 
@@ -758,7 +774,7 @@ Inventory category and asset category create reject active duplicates by `compan
 
 ### Purchase, Inventory & Asset Exclusions
 
-Purchase, inventory, and asset APIs do not implement a full generic approval engine, accounting ledger posting, invoice posting, PDF generation, or frontend screens yet.
+Purchase, inventory, and asset APIs do not implement a full generic approval engine, accounting ledger posting, invoice posting, PDF generation, barcode scanning, or file upload flows yet.
 
 ## Documents, Files & Knowledge Base APIs
 

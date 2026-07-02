@@ -1,5 +1,10 @@
 import { VendorFormPage } from "@/features/finance/vendor-form-page";
 
-export default function EditVendorPage({ params }: { params: { id: string } }) {
-  return <VendorFormPage vendorId={params.id} />;
+export default async function EditVendorPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <VendorFormPage vendorId={id} />;
 }

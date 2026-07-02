@@ -842,13 +842,43 @@ Latest Backend Verification After Finance Detail/Update Endpoints:
 - `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
 - `npm run build`: passed.
 
+## Completed Frontend Purchase, Inventory & Asset Management Pass
+
+- Added Purchase frontend screens under `apps/frontend/src/features/purchase`.
+- Added Inventory frontend screens under `apps/frontend/src/features/inventory`.
+- Added Assets frontend screens under `apps/frontend/src/features/assets`.
+- Added routes for `/purchase`, `/purchase/requests`, `/purchase/requests/new`, `/purchase/requests/[id]`, `/purchase/requests/[id]/edit`, `/purchase/orders`, `/purchase/orders/new`, `/purchase/orders/[id]`, `/purchase/orders/[id]/edit`, `/purchase/grn`, `/purchase/grn/new`, `/purchase/grn/[id]`, `/inventory`, `/inventory/items`, `/inventory/items/new`, `/inventory/items/[id]`, `/inventory/items/[id]/edit`, `/inventory/categories`, `/inventory/stock-movements`, `/inventory/stock-adjustments/new`, `/assets`, `/assets/new`, `/assets/[id]`, `/assets/[id]/edit`, `/assets/categories`, `/assets/assignments`, and `/assets/maintenance`.
+- Added purchase overview with request/order/GRN, low stock, stock movement, and asset summary cards.
+- Added purchase request and order list/search/filter/pagination, dynamic item create/edit forms, detail pages, and status actions.
+- Added GRN list/create/detail flow with purchase-order-linked received items.
+- Added inventory overview, item list/search/filter/pagination, item create/edit/detail, category list/create/edit, stock movement list, and stock adjustment form.
+- Added asset list/search/filter/pagination, asset create/edit/detail, category list/create/edit, assignment list/create, and maintenance list/create.
+- Added direct backend endpoints for purchase request/order/GRN, inventory category/item/movement, asset category/asset detail reads and updates, plus asset assignment and maintenance list endpoints because requested frontend routes were blocked without them.
+- Updated permission-aware navigation to show Purchase, Inventory, and Assets entries.
+- Added frontend documentation at `docs/frontend/purchase-inventory-assets.md`.
+
+Latest Frontend Purchase, Inventory & Asset Management verification:
+
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+
+Latest Backend Verification After Purchase/Inventory/Assets Detail/Update Endpoints:
+
+- `npm run prisma:validate`: passed. Prisma also reported the existing Prisma 7 config deprecation notice.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with existing Jest/Supertest/test typing warnings.
+- `npm test -- --runInBand`: 23 suites, 104 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+
 ## Not Started
 
 - Integration providers.
 - BullMQ queue wiring.
 - File/document binary storage abstraction.
 - Refactoring existing local approval flows into the generic approval engine.
-- Remaining business frontend screens beyond the completed foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, and Finance / Expenses / Vendors passes.
+- Remaining business frontend screens beyond the completed foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendors, and Purchase / Inventory / Assets passes.
 - Invoice PDF generation, email/WhatsApp delivery, full accounting ledger posting, payment gateway integration, bank files, and reconciliation.
 
 ## Next Build Milestone

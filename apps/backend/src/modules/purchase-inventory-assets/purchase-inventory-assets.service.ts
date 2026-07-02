@@ -7,7 +7,9 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import {
   AssignAssetDto,
+  AssetAssignmentQueryDto,
   AssetCategoryQueryDto,
+  AssetMaintenanceQueryDto,
   AssetQueryDto,
   ChangePurchaseOrderStatusDto,
   ChangePurchaseRequestStatusDto,
@@ -24,9 +26,17 @@ import {
   GoodsReceivedNoteQueryDto,
   InventoryCategoryQueryDto,
   InventoryItemQueryDto,
+  PurchaseOrderItemDto,
   PurchaseOrderQueryDto,
+  PurchaseRequestItemDto,
   PurchaseRequestQueryDto,
   StockMovementQueryDto,
+  UpdateAssetCategoryDto,
+  UpdateAssetDto,
+  UpdateInventoryCategoryDto,
+  UpdateInventoryItemDto,
+  UpdatePurchaseOrderDto,
+  UpdatePurchaseRequestDto,
 } from './dto/purchase-inventory-assets.dto';
 import {
   AssetStatusDto,
@@ -98,6 +108,55 @@ export class PurchaseInventoryAssetsService {
     return this.paginated(data, page, limit, total);
   }
 
+  async findInventoryCategory(companyId: string, id: string) {
+    const category = await this.prisma.inventoryCategory.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: { items: { where: { deletedAt: null }, take: 20 } },
+    });
+    if (!category) throw new NotFoundException('Inventory category not found');
+    return category;
+  }
+
+  async updateInventoryCategory(
+    companyId: string,
+    id: string,
+    actorId: string,
+    dto: UpdateInventoryCategoryDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const current = await this.prisma.inventoryCategory.findFirst({
+      where: { id, companyId, deletedAt: null },
+    });
+    if (!current) throw new NotFoundException('Inventory category not found');
+    if (dto.name && dto.name !== current.name) {
+      const existing = await this.prisma.inventoryCategory.findFirst({
+        where: { companyId, name: dto.name, deletedAt: null, NOT: { id } },
+      });
+      if (existing) throw new ConflictException('Inventory category exists');
+    }
+    const category = await this.prisma.inventoryCategory.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        description: dto.description,
+        updatedById: actorId,
+      },
+    });
+    await this.audit(
+      companyId,
+      actorId,
+      'inventory.categories.update',
+      'InventoryCategory',
+      category.id,
+      current,
+      category,
+      ipAddress,
+      userAgent,
+    );
+    return category;
+  }
+
   async createInventoryItem(
     companyId: string,
     actorId: string,
@@ -157,6 +216,7 @@ export class PurchaseInventoryAssetsService {
     const [data, total] = await Promise.all([
       this.prisma.inventoryItem.findMany({
         where,
+        include: { inventoryCategory: true },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { [query.sortBy ?? 'createdAt']: query.sortOrder ?? 'desc' },
@@ -164,6 +224,61 @@ export class PurchaseInventoryAssetsService {
       this.prisma.inventoryItem.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findInventoryItem(companyId: string, id: string) {
+    const item = await this.prisma.inventoryItem.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: {
+        inventoryCategory: true,
+        stockMovements: {
+          orderBy: { movementDate: 'desc' },
+          take: 20,
+        },
+      },
+    });
+    if (!item) throw new NotFoundException('Inventory item not found');
+    return item;
+  }
+
+  async updateInventoryItem(
+    companyId: string,
+    id: string,
+    actorId: string,
+    dto: UpdateInventoryItemDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const current = await this.prisma.inventoryItem.findFirst({
+      where: { id, companyId, deletedAt: null },
+    });
+    if (!current) throw new NotFoundException('Inventory item not found');
+    await this.ensureNoDuplicateInventoryItem(companyId, dto, id);
+    const item = await this.prisma.inventoryItem.update({
+      where: { id },
+      data: {
+        inventoryCategoryId: dto.inventoryCategoryId,
+        name: dto.name,
+        itemCode: dto.itemCode,
+        sku: dto.sku,
+        unit: dto.unit,
+        lowStockThreshold: dto.lowStockThreshold,
+        updatedById: actorId,
+      },
+      include: { inventoryCategory: true },
+    });
+    await this.audit(
+      companyId,
+      actorId,
+      'inventory.items.update',
+      'InventoryItem',
+      item.id,
+      current,
+      item,
+      ipAddress,
+      userAgent,
+    );
+    return item;
   }
 
   async createStockMovement(
@@ -226,6 +341,7 @@ export class PurchaseInventoryAssetsService {
     const [data, total] = await Promise.all([
       this.prisma.stockMovement.findMany({
         where,
+        include: { inventoryItem: true },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: {
@@ -235,6 +351,15 @@ export class PurchaseInventoryAssetsService {
       this.prisma.stockMovement.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findStockMovement(companyId: string, id: string) {
+    const movement = await this.prisma.stockMovement.findFirst({
+      where: { id, companyId },
+      include: { inventoryItem: true },
+    });
+    if (!movement) throw new NotFoundException('Stock movement not found');
+    return movement;
   }
 
   async createPurchaseRequest(
@@ -309,7 +434,11 @@ export class PurchaseInventoryAssetsService {
     const [data, total] = await Promise.all([
       this.prisma.purchaseRequest.findMany({
         where,
-        include: { items: true },
+        include: {
+          requesterEmployee: this.employeeInclude(),
+          items: { include: { inventoryItem: true } },
+          purchaseOrders: true,
+        },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { [query.sortBy ?? 'createdAt']: query.sortOrder ?? 'desc' },
@@ -317,6 +446,73 @@ export class PurchaseInventoryAssetsService {
       this.prisma.purchaseRequest.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findPurchaseRequest(companyId: string, id: string) {
+    const request = await this.prisma.purchaseRequest.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: {
+        requesterEmployee: this.employeeInclude(),
+        items: { include: { inventoryItem: true } },
+        purchaseOrders: { include: { vendor: true, items: true } },
+      },
+    });
+    if (!request) throw new NotFoundException('Purchase request not found');
+    return request;
+  }
+
+  async updatePurchaseRequest(
+    companyId: string,
+    id: string,
+    actorId: string,
+    dto: UpdatePurchaseRequestDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const current = await this.prisma.purchaseRequest.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: { items: true },
+    });
+    if (!current) throw new NotFoundException('Purchase request not found');
+
+    const request = await this.prisma.purchaseRequest.update({
+      where: { id },
+      data: {
+        requesterEmployeeId: dto.requesterEmployeeId,
+        title: dto.title,
+        neededByDate:
+          dto.neededByDate === undefined
+            ? undefined
+            : this.toDateOnly(dto.neededByDate),
+        notes: dto.notes,
+        updatedById: actorId,
+        ...(dto.items
+          ? {
+              items: {
+                deleteMany: { purchaseRequestId: id },
+                create: this.purchaseRequestItemCreates(dto.items, companyId),
+              },
+            }
+          : {}),
+      },
+      include: {
+        requesterEmployee: this.employeeInclude(),
+        items: { include: { inventoryItem: true } },
+        purchaseOrders: true,
+      },
+    });
+    await this.audit(
+      companyId,
+      actorId,
+      'purchases.requests.update',
+      'PurchaseRequest',
+      request.id,
+      current,
+      request,
+      ipAddress,
+      userAgent,
+    );
+    return request;
   }
 
   async changePurchaseRequestStatus(
@@ -451,7 +647,12 @@ export class PurchaseInventoryAssetsService {
     const [data, total] = await Promise.all([
       this.prisma.purchaseOrder.findMany({
         where,
-        include: { items: true },
+        include: {
+          vendor: true,
+          purchaseRequest: true,
+          items: { include: { inventoryItem: true } },
+          goodsReceivedNotes: true,
+        },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { [query.sortBy ?? 'createdAt']: query.sortOrder ?? 'desc' },
@@ -459,6 +660,94 @@ export class PurchaseInventoryAssetsService {
       this.prisma.purchaseOrder.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findPurchaseOrder(companyId: string, id: string) {
+    const order = await this.prisma.purchaseOrder.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: {
+        vendor: true,
+        purchaseRequest: true,
+        items: { include: { inventoryItem: true } },
+        goodsReceivedNotes: { include: { items: true } },
+      },
+    });
+    if (!order) throw new NotFoundException('Purchase order not found');
+    return order;
+  }
+
+  async updatePurchaseOrder(
+    companyId: string,
+    id: string,
+    actorId: string,
+    dto: UpdatePurchaseOrderDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const current = await this.prisma.purchaseOrder.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: { items: true },
+    });
+    if (!current) throw new NotFoundException('Purchase order not found');
+    if (dto.orderNumber && dto.orderNumber !== current.orderNumber) {
+      const existing = await this.prisma.purchaseOrder.findFirst({
+        where: {
+          companyId,
+          orderNumber: dto.orderNumber,
+          deletedAt: null,
+          NOT: { id },
+        },
+      });
+      if (existing) throw new ConflictException('Purchase order exists');
+    }
+    const totals = dto.items ? this.purchaseOrderTotals(dto.items) : undefined;
+    const order = await this.prisma.purchaseOrder.update({
+      where: { id },
+      data: {
+        vendorId: dto.vendorId,
+        purchaseRequestId: dto.purchaseRequestId,
+        orderNumber: dto.orderNumber,
+        orderDate:
+          dto.orderDate === undefined
+            ? undefined
+            : this.toDateOnly(dto.orderDate)!,
+        expectedDeliveryDate:
+          dto.expectedDeliveryDate === undefined
+            ? undefined
+            : this.toDateOnly(dto.expectedDeliveryDate),
+        notes: dto.notes,
+        subTotal: totals?.subTotal,
+        taxAmount: totals?.taxAmount,
+        totalAmount: totals?.totalAmount,
+        updatedById: actorId,
+        ...(dto.items
+          ? {
+              items: {
+                deleteMany: { purchaseOrderId: id },
+                create: this.purchaseOrderItemCreates(dto.items, companyId),
+              },
+            }
+          : {}),
+      },
+      include: {
+        vendor: true,
+        purchaseRequest: true,
+        items: { include: { inventoryItem: true } },
+        goodsReceivedNotes: true,
+      },
+    });
+    await this.audit(
+      companyId,
+      actorId,
+      'purchases.orders.update',
+      'PurchaseOrder',
+      order.id,
+      current,
+      order,
+      ipAddress,
+      userAgent,
+    );
+    return order;
   }
 
   async changePurchaseOrderStatus(
@@ -587,7 +876,10 @@ export class PurchaseInventoryAssetsService {
     const [data, total] = await Promise.all([
       this.prisma.goodsReceivedNote.findMany({
         where,
-        include: { items: true },
+        include: {
+          purchaseOrder: { include: { vendor: true } },
+          items: { include: { inventoryItem: true, purchaseOrderItem: true } },
+        },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: {
@@ -597,6 +889,18 @@ export class PurchaseInventoryAssetsService {
       this.prisma.goodsReceivedNote.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findGoodsReceivedNote(companyId: string, id: string) {
+    const note = await this.prisma.goodsReceivedNote.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: {
+        purchaseOrder: { include: { vendor: true, items: true } },
+        items: { include: { inventoryItem: true, purchaseOrderItem: true } },
+      },
+    });
+    if (!note) throw new NotFoundException('Goods received note not found');
+    return note;
   }
 
   async createAssetCategory(
@@ -653,6 +957,55 @@ export class PurchaseInventoryAssetsService {
       this.prisma.assetCategory.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findAssetCategory(companyId: string, id: string) {
+    const category = await this.prisma.assetCategory.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: { assets: { where: { deletedAt: null }, take: 20 } },
+    });
+    if (!category) throw new NotFoundException('Asset category not found');
+    return category;
+  }
+
+  async updateAssetCategory(
+    companyId: string,
+    id: string,
+    actorId: string,
+    dto: UpdateAssetCategoryDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const current = await this.prisma.assetCategory.findFirst({
+      where: { id, companyId, deletedAt: null },
+    });
+    if (!current) throw new NotFoundException('Asset category not found');
+    if (dto.name && dto.name !== current.name) {
+      const existing = await this.prisma.assetCategory.findFirst({
+        where: { companyId, name: dto.name, deletedAt: null, NOT: { id } },
+      });
+      if (existing) throw new ConflictException('Asset category exists');
+    }
+    const category = await this.prisma.assetCategory.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        description: dto.description,
+        updatedById: actorId,
+      },
+    });
+    await this.audit(
+      companyId,
+      actorId,
+      'assets.categories.update',
+      'AssetCategory',
+      category.id,
+      current,
+      category,
+      ipAddress,
+      userAgent,
+    );
+    return category;
   }
 
   async createAsset(
@@ -717,11 +1070,175 @@ export class PurchaseInventoryAssetsService {
     const [data, total] = await Promise.all([
       this.prisma.asset.findMany({
         where,
+        include: {
+          assetCategory: true,
+          assignedEmployee: this.employeeInclude(),
+        },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { [query.sortBy ?? 'createdAt']: query.sortOrder ?? 'desc' },
       }),
       this.prisma.asset.count({ where }),
+    ]);
+    return this.paginated(data, page, limit, total);
+  }
+
+  async findAsset(companyId: string, id: string) {
+    const asset = await this.prisma.asset.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: {
+        assetCategory: true,
+        assignedEmployee: this.employeeInclude(),
+        assignments: {
+          include: { employee: this.employeeInclude() },
+          orderBy: { assignedAt: 'desc' },
+        },
+        maintenanceRecords: {
+          include: { vendor: true },
+          orderBy: { maintenanceDate: 'desc' },
+        },
+      },
+    });
+    if (!asset) throw new NotFoundException('Asset not found');
+    return asset;
+  }
+
+  async updateAsset(
+    companyId: string,
+    id: string,
+    actorId: string,
+    dto: UpdateAssetDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const current = await this.prisma.asset.findFirst({
+      where: { id, companyId, deletedAt: null },
+    });
+    if (!current) throw new NotFoundException('Asset not found');
+    await this.ensureNoDuplicateAsset(companyId, dto, id);
+    const asset = await this.prisma.asset.update({
+      where: { id },
+      data: {
+        assetCategoryId: dto.assetCategoryId,
+        name: dto.name,
+        assetTag: dto.assetTag,
+        serialNumber: dto.serialNumber,
+        purchaseDate:
+          dto.purchaseDate === undefined
+            ? undefined
+            : this.toDateOnly(dto.purchaseDate),
+        warrantyExpiryDate:
+          dto.warrantyExpiryDate === undefined
+            ? undefined
+            : this.toDateOnly(dto.warrantyExpiryDate),
+        status: dto.status,
+        notes: dto.notes,
+        updatedById: actorId,
+      },
+      include: {
+        assetCategory: true,
+        assignedEmployee: this.employeeInclude(),
+      },
+    });
+    await this.audit(
+      companyId,
+      actorId,
+      'assets.update',
+      'Asset',
+      asset.id,
+      current,
+      asset,
+      ipAddress,
+      userAgent,
+    );
+    return asset;
+  }
+
+  async findAssetAssignments(
+    companyId: string,
+    query: AssetAssignmentQueryDto,
+  ) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where: Prisma.AssetAssignmentWhereInput = {
+      companyId,
+      ...(query.assetId ? { assetId: query.assetId } : {}),
+      ...(query.employeeId ? { employeeId: query.employeeId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.search
+        ? {
+            OR: [
+              { notes: { contains: query.search, mode: 'insensitive' } },
+              {
+                asset: {
+                  name: { contains: query.search, mode: 'insensitive' },
+                },
+              },
+              {
+                employee: {
+                  firstName: { contains: query.search, mode: 'insensitive' },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.assetAssignment.findMany({
+        where,
+        include: {
+          asset: { include: { assetCategory: true } },
+          employee: this.employeeInclude(),
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { [query.sortBy ?? 'assignedAt']: query.sortOrder ?? 'desc' },
+      }),
+      this.prisma.assetAssignment.count({ where }),
+    ]);
+    return this.paginated(data, page, limit, total);
+  }
+
+  async findAssetMaintenanceRecords(
+    companyId: string,
+    query: AssetMaintenanceQueryDto,
+  ) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where: Prisma.AssetMaintenanceRecordWhereInput = {
+      companyId,
+      deletedAt: null,
+      ...(query.assetId ? { assetId: query.assetId } : {}),
+      ...(query.vendorId ? { vendorId: query.vendorId } : {}),
+      ...(query.search
+        ? {
+            OR: [
+              { description: { contains: query.search, mode: 'insensitive' } },
+              {
+                asset: {
+                  name: { contains: query.search, mode: 'insensitive' },
+                },
+              },
+              {
+                vendor: {
+                  name: { contains: query.search, mode: 'insensitive' },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.assetMaintenanceRecord.findMany({
+        where,
+        include: { asset: true, vendor: true },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: {
+          [query.sortBy ?? 'maintenanceDate']: query.sortOrder ?? 'desc',
+        },
+      }),
+      this.prisma.assetMaintenanceRecord.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
   }
@@ -866,14 +1383,85 @@ export class PurchaseInventoryAssetsService {
     return movement;
   }
 
+  private purchaseRequestItemCreates(
+    items: PurchaseRequestItemDto[],
+    companyId: string,
+  ) {
+    return items.map((item) => ({
+      companyId,
+      inventoryItemId: item.inventoryItemId,
+      description: item.description,
+      quantity: item.quantity,
+      estimatedUnitPrice: item.estimatedUnitPrice ?? 0,
+      estimatedTotal: this.money(
+        item.quantity * (item.estimatedUnitPrice ?? 0),
+      ),
+    }));
+  }
+
+  private purchaseOrderItemCreates(
+    items: PurchaseOrderItemDto[],
+    companyId: string,
+  ) {
+    return items.map((item) => {
+      const taxAmount = item.taxAmount ?? 0;
+      const lineTotal = this.money(item.quantity * item.unitPrice + taxAmount);
+      return {
+        companyId,
+        inventoryItemId: item.inventoryItemId,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        taxAmount,
+        lineTotal,
+      };
+    });
+  }
+
+  private purchaseOrderTotals(items: PurchaseOrderItemDto[]) {
+    const subTotal = items.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
+      0,
+    );
+    const taxAmount = items.reduce(
+      (sum, item) => sum + (item.taxAmount ?? 0),
+      0,
+    );
+    return {
+      subTotal: this.money(subTotal),
+      taxAmount: this.money(taxAmount),
+      totalAmount: this.money(subTotal + taxAmount),
+    };
+  }
+
+  private employeeInclude() {
+    return {
+      select: {
+        id: true,
+        employeeCode: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+      },
+    } satisfies Prisma.EmployeeDefaultArgs;
+  }
+
   private async ensureNoDuplicateInventoryItem(
     companyId: string,
-    dto: CreateInventoryItemDto,
+    dto: Partial<CreateInventoryItemDto>,
+    excludeId?: string,
   ) {
-    const or: Prisma.InventoryItemWhereInput[] = [{ itemCode: dto.itemCode }];
+    const or: Prisma.InventoryItemWhereInput[] = [];
+    if (dto.itemCode) or.push({ itemCode: dto.itemCode });
     if (dto.sku) or.push({ sku: dto.sku });
+    if (!or.length) return;
     const existing = await this.prisma.inventoryItem.findFirst({
-      where: { companyId, deletedAt: null, OR: or },
+      where: {
+        companyId,
+        deletedAt: null,
+        OR: or,
+        ...(excludeId ? { NOT: { id: excludeId } } : {}),
+      },
     });
     if (existing) {
       throw new ConflictException(
@@ -882,11 +1470,22 @@ export class PurchaseInventoryAssetsService {
     }
   }
 
-  private async ensureNoDuplicateAsset(companyId: string, dto: CreateAssetDto) {
-    const or: Prisma.AssetWhereInput[] = [{ assetTag: dto.assetTag }];
+  private async ensureNoDuplicateAsset(
+    companyId: string,
+    dto: Partial<CreateAssetDto>,
+    excludeId?: string,
+  ) {
+    const or: Prisma.AssetWhereInput[] = [];
+    if (dto.assetTag) or.push({ assetTag: dto.assetTag });
     if (dto.serialNumber) or.push({ serialNumber: dto.serialNumber });
+    if (!or.length) return;
     const existing = await this.prisma.asset.findFirst({
-      where: { companyId, deletedAt: null, OR: or },
+      where: {
+        companyId,
+        deletedAt: null,
+        OR: or,
+        ...(excludeId ? { NOT: { id: excludeId } } : {}),
+      },
     });
     if (existing) {
       throw new ConflictException(

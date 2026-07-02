@@ -1,10 +1,10 @@
 # Purchase, Inventory & Asset Management Module
 
-Last updated: 2026-06-13
+Last updated: 2026-07-02
 
 ## Scope
 
-Implemented backend-only Purchase, Inventory & Asset Management foundation.
+Implemented Purchase, Inventory & Asset Management backend foundation and frontend screens.
 
 Included:
 
@@ -26,9 +26,8 @@ Included:
 
 Excluded for now:
 
-- Frontend screens.
-- Full approval workflow engine.
 - Accounting ledger or invoice posting.
+- Full approval workflow engine.
 - PDF generation.
 - Bank/payment posting.
 
@@ -83,35 +82,51 @@ Purchase request routes:
 
 - `GET /api/v1/purchases/requests`
 - `POST /api/v1/purchases/requests`
+- `GET /api/v1/purchases/requests/:id`
+- `PATCH /api/v1/purchases/requests/:id`
 - `PATCH /api/v1/purchases/requests/:id/status`
 
 Purchase order routes:
 
 - `GET /api/v1/purchases/orders`
 - `POST /api/v1/purchases/orders`
+- `GET /api/v1/purchases/orders/:id`
+- `PATCH /api/v1/purchases/orders/:id`
 - `PATCH /api/v1/purchases/orders/:id/status`
 
 Goods received note routes:
 
 - `GET /api/v1/purchases/goods-received-notes`
 - `POST /api/v1/purchases/goods-received-notes`
+- `GET /api/v1/purchases/goods-received-notes/:id`
 
 Inventory routes:
 
 - `GET /api/v1/inventory/categories`
 - `POST /api/v1/inventory/categories`
+- `GET /api/v1/inventory/categories/:id`
+- `PATCH /api/v1/inventory/categories/:id`
 - `GET /api/v1/inventory/items`
 - `POST /api/v1/inventory/items`
+- `GET /api/v1/inventory/items/:id`
+- `PATCH /api/v1/inventory/items/:id`
 - `GET /api/v1/inventory/movements`
 - `POST /api/v1/inventory/movements`
+- `GET /api/v1/inventory/movements/:id`
 - `POST /api/v1/inventory/stock-adjustments`
 
 Asset routes:
 
 - `GET /api/v1/assets/categories`
 - `POST /api/v1/assets/categories`
+- `GET /api/v1/assets/categories/:id`
+- `PATCH /api/v1/assets/categories/:id`
 - `GET /api/v1/assets`
 - `POST /api/v1/assets`
+- `GET /api/v1/assets/:id`
+- `PATCH /api/v1/assets/:id`
+- `GET /api/v1/assets/assignments`
+- `GET /api/v1/assets/maintenance`
 - `POST /api/v1/assets/:id/assign`
 - `POST /api/v1/assets/:id/maintenance`
 
@@ -155,6 +170,17 @@ Assets also support:
 - `assetCategoryId`
 - `assignedEmployeeId`
 - `status`
+
+Asset assignments also support:
+
+- `assetId`
+- `employeeId`
+- `status`
+
+Asset maintenance records also support:
+
+- `assetId`
+- `vendorId`
 
 ## Status Flows
 

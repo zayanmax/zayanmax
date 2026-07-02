@@ -19,7 +19,9 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import type { CurrentUser } from '../../common/types/current-user.type';
 import {
   AssignAssetDto,
+  AssetAssignmentQueryDto,
   AssetCategoryQueryDto,
+  AssetMaintenanceQueryDto,
   AssetQueryDto,
   ChangePurchaseOrderStatusDto,
   ChangePurchaseRequestStatusDto,
@@ -39,6 +41,12 @@ import {
   PurchaseOrderQueryDto,
   PurchaseRequestQueryDto,
   StockMovementQueryDto,
+  UpdateAssetCategoryDto,
+  UpdateAssetDto,
+  UpdateInventoryCategoryDto,
+  UpdateInventoryItemDto,
+  UpdatePurchaseOrderDto,
+  UpdatePurchaseRequestDto,
 } from './dto/purchase-inventory-assets.dto';
 import { PurchaseInventoryAssetsService } from './purchase-inventory-assets.service';
 
@@ -73,6 +81,37 @@ export class PurchaseInventoryAssetsController {
   ) {
     return this.purchaseInventoryAssetsService.createPurchaseRequest(
       user.companyId,
+      user.id,
+      dto,
+      ipAddress,
+      request.headers['user-agent'],
+    );
+  }
+
+  @RequirePermissions('purchases.view')
+  @Get('purchases/requests/:id')
+  findPurchaseRequest(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.purchaseInventoryAssetsService.findPurchaseRequest(
+      user.companyId,
+      id,
+    );
+  }
+
+  @RequirePermissions('purchases.manage')
+  @Patch('purchases/requests/:id')
+  updatePurchaseRequest(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Body() dto: UpdatePurchaseRequestDto,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    return this.purchaseInventoryAssetsService.updatePurchaseRequest(
+      user.companyId,
+      id,
       user.id,
       dto,
       ipAddress,
@@ -128,6 +167,37 @@ export class PurchaseInventoryAssetsController {
     );
   }
 
+  @RequirePermissions('purchases.view')
+  @Get('purchases/orders/:id')
+  findPurchaseOrder(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.purchaseInventoryAssetsService.findPurchaseOrder(
+      user.companyId,
+      id,
+    );
+  }
+
+  @RequirePermissions('purchases.manage')
+  @Patch('purchases/orders/:id')
+  updatePurchaseOrder(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Body() dto: UpdatePurchaseOrderDto,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    return this.purchaseInventoryAssetsService.updatePurchaseOrder(
+      user.companyId,
+      id,
+      user.id,
+      dto,
+      ipAddress,
+      request.headers['user-agent'],
+    );
+  }
+
   @RequirePermissions('purchases.manage')
   @Patch('purchases/orders/:id/status')
   changePurchaseOrderStatus(
@@ -176,6 +246,18 @@ export class PurchaseInventoryAssetsController {
     );
   }
 
+  @RequirePermissions('purchases.view')
+  @Get('purchases/goods-received-notes/:id')
+  findGoodsReceivedNote(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.purchaseInventoryAssetsService.findGoodsReceivedNote(
+      user.companyId,
+      id,
+    );
+  }
+
   @RequirePermissions('inventory.view')
   @Get('inventory/categories')
   findInventoryCategories(
@@ -206,6 +288,37 @@ export class PurchaseInventoryAssetsController {
   }
 
   @RequirePermissions('inventory.view')
+  @Get('inventory/categories/:id')
+  findInventoryCategory(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.purchaseInventoryAssetsService.findInventoryCategory(
+      user.companyId,
+      id,
+    );
+  }
+
+  @RequirePermissions('inventory.manage')
+  @Patch('inventory/categories/:id')
+  updateInventoryCategory(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateInventoryCategoryDto,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    return this.purchaseInventoryAssetsService.updateInventoryCategory(
+      user.companyId,
+      id,
+      user.id,
+      dto,
+      ipAddress,
+      request.headers['user-agent'],
+    );
+  }
+
+  @RequirePermissions('inventory.view')
   @Get('inventory/items')
   findInventoryItems(
     @CurrentUserDecorator() user: CurrentUser,
@@ -227,6 +340,37 @@ export class PurchaseInventoryAssetsController {
   ) {
     return this.purchaseInventoryAssetsService.createInventoryItem(
       user.companyId,
+      user.id,
+      dto,
+      ipAddress,
+      request.headers['user-agent'],
+    );
+  }
+
+  @RequirePermissions('inventory.view')
+  @Get('inventory/items/:id')
+  findInventoryItem(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.purchaseInventoryAssetsService.findInventoryItem(
+      user.companyId,
+      id,
+    );
+  }
+
+  @RequirePermissions('inventory.manage')
+  @Patch('inventory/items/:id')
+  updateInventoryItem(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateInventoryItemDto,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    return this.purchaseInventoryAssetsService.updateInventoryItem(
+      user.companyId,
+      id,
       user.id,
       dto,
       ipAddress,
@@ -280,6 +424,18 @@ export class PurchaseInventoryAssetsController {
     );
   }
 
+  @RequirePermissions('inventory.view')
+  @Get('inventory/movements/:id')
+  findStockMovement(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.purchaseInventoryAssetsService.findStockMovement(
+      user.companyId,
+      id,
+    );
+  }
+
   @RequirePermissions('assets.view')
   @Get('assets/categories')
   findAssetCategories(
@@ -310,6 +466,61 @@ export class PurchaseInventoryAssetsController {
   }
 
   @RequirePermissions('assets.view')
+  @Get('assets/categories/:id')
+  findAssetCategory(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.purchaseInventoryAssetsService.findAssetCategory(
+      user.companyId,
+      id,
+    );
+  }
+
+  @RequirePermissions('assets.manage')
+  @Patch('assets/categories/:id')
+  updateAssetCategory(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateAssetCategoryDto,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    return this.purchaseInventoryAssetsService.updateAssetCategory(
+      user.companyId,
+      id,
+      user.id,
+      dto,
+      ipAddress,
+      request.headers['user-agent'],
+    );
+  }
+
+  @RequirePermissions('assets.view')
+  @Get('assets/assignments')
+  findAssetAssignments(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Query() query: AssetAssignmentQueryDto,
+  ) {
+    return this.purchaseInventoryAssetsService.findAssetAssignments(
+      user.companyId,
+      query,
+    );
+  }
+
+  @RequirePermissions('assets.view')
+  @Get('assets/maintenance')
+  findAssetMaintenanceRecords(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Query() query: AssetMaintenanceQueryDto,
+  ) {
+    return this.purchaseInventoryAssetsService.findAssetMaintenanceRecords(
+      user.companyId,
+      query,
+    );
+  }
+
+  @RequirePermissions('assets.view')
   @Get('assets')
   findAssets(
     @CurrentUserDecorator() user: CurrentUser,
@@ -331,6 +542,34 @@ export class PurchaseInventoryAssetsController {
   ) {
     return this.purchaseInventoryAssetsService.createAsset(
       user.companyId,
+      user.id,
+      dto,
+      ipAddress,
+      request.headers['user-agent'],
+    );
+  }
+
+  @RequirePermissions('assets.view')
+  @Get('assets/:id')
+  findAsset(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.purchaseInventoryAssetsService.findAsset(user.companyId, id);
+  }
+
+  @RequirePermissions('assets.manage')
+  @Patch('assets/:id')
+  updateAsset(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateAssetDto,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    return this.purchaseInventoryAssetsService.updateAsset(
+      user.companyId,
+      id,
       user.id,
       dto,
       ipAddress,

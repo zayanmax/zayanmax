@@ -866,7 +866,7 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 ## Latest Frontend State
 
 - Frontend foundation exists under `apps/frontend`.
-- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, and Finance / Expenses / Vendor Payments frontend passes are implemented.
+- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendor Payments, and Purchase / Inventory / Asset Management frontend passes are implemented.
 - Projects routes exist at `/projects`, `/projects/new`, `/projects/[id]`, and `/projects/[id]/edit`.
 - Tasks routes exist at `/tasks`, `/tasks/new`, `/tasks/[id]`, `/tasks/[id]/edit`, and `/tasks/kanban`.
 - Projects and Tasks use `projects.*` and `tasks.*` permissions from `/auth/me`.
@@ -887,10 +887,17 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 - Expense categories and petty cash accounts are list/create only because backend update/delete routes are not exposed.
 - Latest finance frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
 - Latest backend verification after finance detail/update endpoints passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
+- Purchase routes exist at `/purchase`, `/purchase/requests`, `/purchase/orders`, and `/purchase/grn` with overview, list, create, edit, detail, receiving, and status-action flows.
+- Inventory routes exist at `/inventory`, `/inventory/items`, `/inventory/categories`, `/inventory/stock-movements`, and `/inventory/stock-adjustments/new` with overview, list, create, edit, detail, category, movement, and adjustment flows.
+- Asset routes exist at `/assets`, `/assets/categories`, `/assets/assignments`, and `/assets/maintenance` with list, create, edit, detail, assignment, and maintenance flows.
+- Purchase screens use `purchases.view`/`purchases.manage`; inventory screens use `inventory.view`/`inventory.manage`; asset screens use `assets.view`/`assets.manage`.
+- Backend gained minimal frontend-blocking read/update endpoints for purchase requests, purchase orders, GRNs, inventory categories/items/movements, asset categories/assets, and list endpoints for asset assignments and maintenance records.
+- Latest purchase/inventory/assets frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
+- Latest backend verification after purchase/inventory/assets detail/update endpoints passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
 
 ## Next Frontend Work
 
-1. Build Purchase, Inventory & Asset Management screens.
+1. Build Documents, Files & Knowledge Base screens.
 2. Add a reusable user lookup component if owner assignment should support direct user selection.
 3. Add an opportunity stage list endpoint and frontend lookup if opportunity stages should be selectable by name.
 4. Add quotation line item update support only if the backend API is extended.

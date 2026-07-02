@@ -1,5 +1,10 @@
 import { InvoiceFormPage } from "@/features/billing/invoice-form-page";
 
-export default function EditInvoicePage({ params }: { params: { id: string } }) {
-  return <InvoiceFormPage invoiceId={params.id} />;
+export default async function EditInvoicePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <InvoiceFormPage invoiceId={id} />;
 }

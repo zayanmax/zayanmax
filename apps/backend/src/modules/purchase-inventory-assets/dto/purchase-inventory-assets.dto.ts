@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer';
+import { PartialType } from '@nestjs/mapped-types';
 import {
   IsEnum,
   IsISO8601,
@@ -12,6 +13,7 @@ import {
 } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import {
+  AssetAssignmentStatusDto,
   AssetStatusDto,
   PurchaseOrderStatusDto,
   PurchaseRequestStatusDto,
@@ -27,6 +29,10 @@ export class CreateInventoryCategoryDto {
   @IsString()
   description?: string;
 }
+
+export class UpdateInventoryCategoryDto extends PartialType(
+  CreateInventoryCategoryDto,
+) {}
 
 export class InventoryCategoryQueryDto extends PaginationQueryDto {}
 
@@ -56,6 +62,10 @@ export class CreateInventoryItemDto {
   @Min(0)
   lowStockThreshold?: number;
 }
+
+export class UpdateInventoryItemDto extends PartialType(
+  CreateInventoryItemDto,
+) {}
 
 export class InventoryItemQueryDto extends PaginationQueryDto {
   @IsOptional()
@@ -159,6 +169,10 @@ export class CreatePurchaseRequestDto {
   items!: PurchaseRequestItemDto[];
 }
 
+export class UpdatePurchaseRequestDto extends PartialType(
+  CreatePurchaseRequestDto,
+) {}
+
 export class PurchaseRequestQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
@@ -229,6 +243,10 @@ export class CreatePurchaseOrderDto {
   @Type(() => PurchaseOrderItemDto)
   items!: PurchaseOrderItemDto[];
 }
+
+export class UpdatePurchaseOrderDto extends PartialType(
+  CreatePurchaseOrderDto,
+) {}
 
 export class PurchaseOrderQueryDto extends PaginationQueryDto {
   @IsOptional()
@@ -303,6 +321,10 @@ export class CreateAssetCategoryDto {
   description?: string;
 }
 
+export class UpdateAssetCategoryDto extends PartialType(
+  CreateAssetCategoryDto,
+) {}
+
 export class AssetCategoryQueryDto extends PaginationQueryDto {}
 
 export class CreateAssetDto {
@@ -339,6 +361,8 @@ export class CreateAssetDto {
   notes?: string;
 }
 
+export class UpdateAssetDto extends PartialType(CreateAssetDto) {}
+
 export class AssetQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
@@ -351,6 +375,20 @@ export class AssetQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(AssetStatusDto)
   declare status?: AssetStatusDto;
+}
+
+export class AssetAssignmentQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsUUID()
+  assetId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsEnum(AssetAssignmentStatusDto)
+  declare status?: AssetAssignmentStatusDto;
 }
 
 export class AssignAssetDto {
@@ -385,4 +423,14 @@ export class CreateAssetMaintenanceDto {
   @IsOptional()
   @IsISO8601({ strict: true })
   nextMaintenanceDate?: string;
+}
+
+export class AssetMaintenanceQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsUUID()
+  assetId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  vendorId?: string;
 }
