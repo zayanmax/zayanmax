@@ -789,6 +789,7 @@ Document permissions:
 ### Document Folder Routes
 
 - `GET /api/v1/document-folders`
+- `GET /api/v1/document-folders/:id`
 - `POST /api/v1/document-folders`
 - `PATCH /api/v1/document-folders/:id`
 - `DELETE /api/v1/document-folders/:id`
@@ -805,6 +806,7 @@ Folder APIs support parent-child hierarchy through `parentFolderId`. Folder `pat
 ### Document Record Routes
 
 - `GET /api/v1/documents`
+- `GET /api/v1/documents/:id`
 - `POST /api/v1/documents`
 - `PATCH /api/v1/documents/:id`
 - `PATCH /api/v1/documents/:id/status`
@@ -847,6 +849,7 @@ They do not upload, scan, preview, or share binary files.
 - `GET /api/v1/knowledge-base/categories`
 - `POST /api/v1/knowledge-base/categories`
 - `GET /api/v1/knowledge-base/articles`
+- `GET /api/v1/knowledge-base/articles/:id`
 - `POST /api/v1/knowledge-base/articles`
 - `PATCH /api/v1/knowledge-base/articles/:id`
 - `PATCH /api/v1/knowledge-base/articles/:id/status`

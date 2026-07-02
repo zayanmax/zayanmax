@@ -872,13 +872,41 @@ Latest Backend Verification After Purchase/Inventory/Assets Detail/Update Endpoi
 - `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
 - `npm run build`: passed.
 
+## Completed Frontend Documents, Files & Knowledge Base Pass
+
+- Added Documents frontend screens under `apps/frontend/src/features/documents`.
+- Added Knowledge Base frontend screens under `apps/frontend/src/features/knowledge-base`.
+- Added routes for `/documents`, `/documents/folders`, `/documents/folders/[id]`, `/documents/categories`, `/documents/tags`, `/documents/records`, `/documents/records/new`, `/documents/records/[id]`, `/documents/records/[id]/edit`, `/knowledge-base`, `/knowledge-base/articles`, `/knowledge-base/articles/new`, `/knowledge-base/articles/[id]`, `/knowledge-base/articles/[id]/edit`, and `/knowledge-base/categories`.
+- Added documents overview with folder/document/expiring/recent/KB/draft summary cards derived from list APIs.
+- Added folder list/detail, category list/create, tag list/create, document record list/create/edit/detail, document version metadata creation, KB category list/create, KB article list/create/edit/detail, and article status actions.
+- Kept the frontend metadata-only: no binary upload, storage integration, OCR, preview, public sharing, notifications, or real-time updates.
+- Added read-only backend endpoints for document folder detail, document detail, and KB article detail because requested frontend detail/edit routes were blocked without them.
+- Updated permission-aware navigation to show Documents Overview, Document Folders, Document Records, Document Categories, Document Tags, Knowledge Base, and KB Categories.
+- Added frontend documentation at `docs/frontend/documents-knowledge-base.md`.
+- Updated `apps/frontend/tsconfig.json` to typecheck stable `.next/types` only; `.next/dev/types` is dev-server generated and can be malformed/stale outside `next dev`.
+
+Latest Frontend Documents, Files & Knowledge Base verification:
+
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+
+Latest Backend Verification After Documents/Knowledge Base Detail Endpoints:
+
+- `npm run prisma:validate`: passed. Prisma also reported the existing Prisma 7 config deprecation notice.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with existing Jest/Supertest/test typing warnings.
+- `npm test -- --runInBand`: 23 suites, 107 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+
 ## Not Started
 
 - Integration providers.
 - BullMQ queue wiring.
 - File/document binary storage abstraction.
 - Refactoring existing local approval flows into the generic approval engine.
-- Remaining business frontend screens beyond the completed foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendors, and Purchase / Inventory / Assets passes.
+- Remaining business frontend screens beyond the completed foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendors, Purchase / Inventory / Assets, and Documents / Knowledge Base passes.
 - Invoice PDF generation, email/WhatsApp delivery, full accounting ledger posting, payment gateway integration, bank files, and reconciliation.
 
 ## Next Build Milestone

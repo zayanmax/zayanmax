@@ -894,10 +894,18 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 - Backend gained minimal frontend-blocking read/update endpoints for purchase requests, purchase orders, GRNs, inventory categories/items/movements, asset categories/assets, and list endpoints for asset assignments and maintenance records.
 - Latest purchase/inventory/assets frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
 - Latest backend verification after purchase/inventory/assets detail/update endpoints passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
+- Documents routes exist at `/documents`, `/documents/folders`, `/documents/categories`, `/documents/tags`, and `/documents/records` with overview, list, create, edit, detail, status, delete, and version metadata flows where supported.
+- Knowledge Base routes exist at `/knowledge-base`, `/knowledge-base/articles`, and `/knowledge-base/categories` with article list/create/edit/detail/status actions and category list/create.
+- Documents and Knowledge Base screens use `documents.view`, `documents.upload`, and `documents.manage`.
+- Backend gained minimal frontend-blocking read endpoints for document folder detail, document record detail, and knowledge base article detail.
+- Document categories, document tags, and KB categories remain list/create only because update/delete backend routes are not exposed.
+- Document and article tag update flows are backend pending; tags are assigned during create only.
+- Latest Documents/Knowledge Base frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
+- Latest backend verification after Documents/Knowledge Base detail endpoints passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
 
 ## Next Frontend Work
 
-1. Build Documents, Files & Knowledge Base screens.
+1. Build Communication, Announcements & Notifications screens.
 2. Add a reusable user lookup component if owner assignment should support direct user selection.
 3. Add an opportunity stage list endpoint and frontend lookup if opportunity stages should be selectable by name.
 4. Add quotation line item update support only if the backend API is extended.

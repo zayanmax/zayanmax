@@ -61,6 +61,15 @@ export class DocumentsKnowledgeBaseController {
     );
   }
 
+  @RequirePermissions('documents.view')
+  @Get('document-folders/:id')
+  findFolder(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.documentsKnowledgeBaseService.findFolder(user.companyId, id);
+  }
+
   @RequirePermissions('documents.manage')
   @Post('document-folders')
   createFolder(
@@ -182,6 +191,15 @@ export class DocumentsKnowledgeBaseController {
       user.companyId,
       query,
     );
+  }
+
+  @RequirePermissions('documents.view')
+  @Get('documents/:id')
+  findDocument(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.documentsKnowledgeBaseService.findDocument(user.companyId, id);
   }
 
   @RequirePermissions('documents.upload')
@@ -313,6 +331,18 @@ export class DocumentsKnowledgeBaseController {
     return this.documentsKnowledgeBaseService.findKnowledgeBaseArticles(
       user.companyId,
       query,
+    );
+  }
+
+  @RequirePermissions('documents.view')
+  @Get('knowledge-base/articles/:id')
+  findKnowledgeBaseArticle(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.documentsKnowledgeBaseService.findKnowledgeBaseArticle(
+      user.companyId,
+      id,
     );
   }
 

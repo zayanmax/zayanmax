@@ -115,6 +115,14 @@ export class DocumentsKnowledgeBaseService {
     return this.paginated(data, page, limit, total);
   }
 
+  async findFolder(companyId: string, id: string) {
+    const folder = await this.prisma.documentFolder.findFirst({
+      where: { id, companyId, deletedAt: null },
+    });
+    if (!folder) throw new NotFoundException('Document folder not found');
+    return folder;
+  }
+
   async updateFolder(
     companyId: string,
     id: string,
@@ -397,6 +405,15 @@ export class DocumentsKnowledgeBaseService {
       this.prisma.documentRecord.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findDocument(companyId: string, id: string) {
+    const document = await this.prisma.documentRecord.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: { tags: true, links: true, versions: true },
+    });
+    if (!document) throw new NotFoundException('Document not found');
+    return document;
   }
 
   async updateDocument(
@@ -702,6 +719,16 @@ export class DocumentsKnowledgeBaseService {
       this.prisma.knowledgeBaseArticle.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findKnowledgeBaseArticle(companyId: string, id: string) {
+    const article = await this.prisma.knowledgeBaseArticle.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: { tags: true },
+    });
+    if (!article)
+      throw new NotFoundException('Knowledge base article not found');
+    return article;
   }
 
   async updateKnowledgeBaseArticle(

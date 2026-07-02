@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { DocumentsKnowledgeBaseService } from './documents-knowledge-base.service';
 import {
   DocumentLinkedEntityTypeDto,
@@ -154,6 +154,45 @@ describe('DocumentsKnowledgeBaseService', () => {
     );
   });
 
+  it('loads document detail with metadata joins and rejects missing records', async () => {
+    prisma.documentRecord.findFirst.mockResolvedValueOnce({
+      id: 'document-id',
+      title: 'Employment Contract',
+      tags: [],
+      links: [],
+      versions: [],
+    });
+    const service = new DocumentsKnowledgeBaseService(prisma as never);
+
+    const result = await service.findDocument('company-id', 'document-id');
+
+    expect(result.id).toBe('document-id');
+    expect(prisma.documentRecord.findFirst).toHaveBeenCalledWith({
+      where: { id: 'document-id', companyId: 'company-id', deletedAt: null },
+      include: { tags: true, links: true, versions: true },
+    });
+
+    prisma.documentRecord.findFirst.mockResolvedValueOnce(null);
+    await expect(
+      service.findDocument('company-id', 'missing-document'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('loads folder detail with company and soft-delete scoping', async () => {
+    prisma.documentFolder.findFirst.mockResolvedValueOnce({
+      id: 'folder-id',
+      name: 'Policies',
+    });
+    const service = new DocumentsKnowledgeBaseService(prisma as never);
+
+    const result = await service.findFolder('company-id', 'folder-id');
+
+    expect(result.id).toBe('folder-id');
+    expect(prisma.documentFolder.findFirst).toHaveBeenCalledWith({
+      where: { id: 'folder-id', companyId: 'company-id', deletedAt: null },
+    });
+  });
+
   it('adds document versions with incremented version numbers and audit logs', async () => {
     prisma.documentRecord.findFirst.mockResolvedValue({
       id: 'document-id',
@@ -300,5 +339,25 @@ describe('DocumentsKnowledgeBaseService', () => {
         }),
       }),
     );
+  });
+
+  it('loads knowledge base article detail with tags', async () => {
+    prisma.knowledgeBaseArticle.findFirst.mockResolvedValueOnce({
+      id: 'article-id',
+      title: 'How to request leave',
+      tags: [],
+    });
+    const service = new DocumentsKnowledgeBaseService(prisma as never);
+
+    const result = await service.findKnowledgeBaseArticle(
+      'company-id',
+      'article-id',
+    );
+
+    expect(result.id).toBe('article-id');
+    expect(prisma.knowledgeBaseArticle.findFirst).toHaveBeenCalledWith({
+      where: { id: 'article-id', companyId: 'company-id', deletedAt: null },
+      include: { tags: true },
+    });
   });
 });

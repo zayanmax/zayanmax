@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
+  BookOpen,
   BriefcaseBusiness,
   Building2,
   CalendarDays,
@@ -10,8 +11,10 @@ import {
   FileCheck2,
   FileBarChart2,
   FileText,
+  FolderTree,
   HelpCircle,
   KanbanSquare,
+  Library,
   LayoutDashboard,
   Package,
   PackageCheck,
@@ -20,6 +23,7 @@ import {
   Target,
   SquareCheckBig,
   Settings,
+  Tags,
   Truck,
   Users,
   WalletCards,
@@ -237,9 +241,45 @@ export const navigationGroups: NavGroup[] = [
         permission: "assets.view",
       },
       {
-        label: "Documents",
+        label: "Documents Overview",
         href: "/documents",
         icon: FileText,
+        permission: "documents.view",
+      },
+      {
+        label: "Document Folders",
+        href: "/documents/folders",
+        icon: FolderTree,
+        permission: "documents.view",
+      },
+      {
+        label: "Document Records",
+        href: "/documents/records",
+        icon: FileText,
+        permission: "documents.view",
+      },
+      {
+        label: "Document Categories",
+        href: "/documents/categories",
+        icon: ClipboardList,
+        permission: "documents.view",
+      },
+      {
+        label: "Document Tags",
+        href: "/documents/tags",
+        icon: Tags,
+        permission: "documents.view",
+      },
+      {
+        label: "Knowledge Base",
+        href: "/knowledge-base/articles",
+        icon: BookOpen,
+        permission: "documents.view",
+      },
+      {
+        label: "KB Categories",
+        href: "/knowledge-base/categories",
+        icon: Library,
         permission: "documents.view",
       },
       {
