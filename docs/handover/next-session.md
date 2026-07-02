@@ -39,9 +39,10 @@ The project now has:
 - Backend platform hardening with Swagger/OpenAPI, health/readiness checks, session/device metadata foundation, password change, password reset token metadata, logout-all, request-context foundation, CORS frontend env support, and RBAC permission audit coverage.
 - Frontend foundation in `apps/frontend` with Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, Radix UI packages, Lucide React, TanStack Query, React Hook Form, Zod, Axios API client, Zustand auth state, protected dashboard shell, permission-aware navigation, auth pages, reusable UI foundations, and dashboard summary page.
 - Employees and HR master data frontend screens with employee list/create/edit/detail plus branch, department, and designation list/create/edit settings pages.
+- Clients and CRM frontend screens with client list/create/edit/detail, status change, soft-delete, contacts, activities, notes, and document metadata sections.
 - Unit tests and e2e tests.
 
-Only the Employees and HR master data frontend CRUD screens have been created. Other module CRUD screens have not been created yet.
+Employees, HR master data, and Clients / CRM frontend screens have been created. Other module CRUD screens have not been created yet.
 
 ## Recommended First Action
 
@@ -93,7 +94,7 @@ Frontend environment:
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api/v1
 ```
 
-The frontend currently has auth flow, protected layout, permission-aware navigation, reusable UI foundations, dashboard summary cards, employee screens, and HR master data screens. Build the next module screen on top of the shared API client and layout rather than adding a second app shell.
+The frontend currently has auth flow, protected layout, permission-aware navigation, reusable UI foundations, dashboard summary cards, employee screens, HR master data screens, and Clients / CRM screens. Build the next module screen on top of the shared API client and layout rather than adding a second app shell.
 
 Known frontend/backend fit notes:
 
@@ -101,6 +102,9 @@ Known frontend/backend fit notes:
 - Branch, department, and designation employee filters are client-side against the current paginated employee result because the backend employee list does not currently accept those filter query parameters.
 - Employee status is displayed but not editable because the backend employee create/update DTO does not accept `status`.
 - Branches, departments, and designations do not show delete actions because their backend controllers currently expose list/create/update only.
+- Client owner filtering uses owners present in the current list result because there is no dedicated clients-owner lookup endpoint.
+- Client document screens create metadata only; file upload is not implemented.
+- Client child sections support create/list only because backend child routes do not expose edit/delete endpoints yet.
 
 ## Must-Follow Backend Rules
 

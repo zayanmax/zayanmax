@@ -81,6 +81,20 @@ Read and summarized:
 - Did not modify the backend.
 - Documented backend limitations in `docs/frontend/employees-hr-master-data.md`.
 
+## Completed Clients And CRM Frontend
+
+- Added client routes: `/clients`, `/clients/new`, `/clients/[id]`, and `/clients/[id]/edit`.
+- Added clients list table with name, type, status, email, phone, owner, location, activity count, created date, actions, search, filters, pagination, loading, empty, and error states.
+- Added client create/edit form using React Hook Form and Zod, with sections for basic client details, contact/business details, address/location details, owner ID, status, and type.
+- Added client detail page with profile, contact, business/address, owner/status/type, and metadata sections.
+- Added status change and delete/soft-delete actions using existing backend endpoints.
+- Added contacts, activities, notes, and document metadata sections on client detail.
+- Added child create forms for contacts, activities, notes, and document metadata.
+- Added feature folder and API/query/mutation hooks under `apps/frontend/src/features/clients`.
+- Did not add projects, sales, invoices, payments, or file upload.
+- Did not modify the backend.
+- Added documentation at `docs/frontend/clients-crm.md`.
+
 ## Completed Clients / CRM Module
 
 - Added Clients / CRM module in `apps/backend/src/modules/clients`.
