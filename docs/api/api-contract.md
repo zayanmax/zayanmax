@@ -1604,6 +1604,7 @@ Invoice series stores numbering metadata:
 ### Invoice Routes
 
 - `GET /api/v1/billing/invoices`
+- `GET /api/v1/billing/invoices/:id`
 - `POST /api/v1/billing/invoices`
 - `PATCH /api/v1/billing/invoices/:id`
 - `PATCH /api/v1/billing/invoices/:id/issue`
@@ -1627,6 +1628,7 @@ Invoice item APIs store tax and discount metadata only. They do not generate PDF
 
 ### Receipts And Allocation Routes
 
+- `GET /api/v1/billing/payment-receipts`
 - `POST /api/v1/billing/payment-receipts`
 - `POST /api/v1/billing/payment-receipts/:id/allocations`
 

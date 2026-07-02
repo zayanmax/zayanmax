@@ -1,6 +1,6 @@
 # Invoices, Billing & Receivables Module
 
-Last updated: 2026-06-13
+Last updated: 2026-07-02
 
 ## Scope Implemented
 
@@ -68,12 +68,14 @@ Routes:
 - `GET /api/v1/billing/invoice-series`
 - `POST /api/v1/billing/invoice-series`
 - `GET /api/v1/billing/invoices`
+- `GET /api/v1/billing/invoices/:id`
 - `POST /api/v1/billing/invoices`
 - `PATCH /api/v1/billing/invoices/:id`
 - `PATCH /api/v1/billing/invoices/:id/issue`
 - `PATCH /api/v1/billing/invoices/:id/cancel`
 - `PATCH /api/v1/billing/invoices/:id/write-off`
 - `POST /api/v1/billing/quotations/:quotationId/convert-to-invoice`
+- `GET /api/v1/billing/payment-receipts`
 - `POST /api/v1/billing/payment-receipts`
 - `POST /api/v1/billing/payment-receipts/:id/allocations`
 - `POST /api/v1/billing/credit-notes`

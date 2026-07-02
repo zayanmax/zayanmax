@@ -157,7 +157,16 @@ export class InvoicesBillingReceivablesService {
     const [data, total] = await Promise.all([
       this.prisma.invoice.findMany({
         where,
-        include: { client: true, items: true, allocations: true },
+        include: {
+          client: true,
+          project: { select: { id: true, name: true } },
+          opportunity: { select: { id: true, name: true } },
+          quotation: {
+            select: { id: true, quotationNumber: true, title: true },
+          },
+          items: true,
+          allocations: true,
+        },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { [query.sortBy ?? 'createdAt']: query.sortOrder ?? 'desc' },
@@ -165,6 +174,34 @@ export class InvoicesBillingReceivablesService {
       this.prisma.invoice.count({ where }),
     ]);
     return this.paginated(data, page, limit, total);
+  }
+
+  async findInvoice(companyId: string, invoiceId: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id: invoiceId, companyId, deletedAt: null },
+      include: {
+        client: true,
+        project: { select: { id: true, name: true } },
+        opportunity: { select: { id: true, name: true } },
+        quotation: { select: { id: true, quotationNumber: true, title: true } },
+        series: true,
+        items: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+        allocations: {
+          include: { receipt: true },
+          orderBy: { allocatedAt: 'desc' },
+        },
+        creditNotes: {
+          where: { deletedAt: null },
+          orderBy: { noteDate: 'desc' },
+        },
+        debitNotes: {
+          where: { deletedAt: null },
+          orderBy: { noteDate: 'desc' },
+        },
+      },
+    });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+    return invoice;
   }
 
   async updateInvoice(
@@ -339,6 +376,45 @@ export class InvoicesBillingReceivablesService {
       userAgent,
     );
     return { ...receipt, allocations };
+  }
+
+  async findPaymentReceipts(companyId: string, query: BillingListQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where: Prisma.PaymentReceiptWhereInput = {
+      companyId,
+      deletedAt: null,
+      ...(query.clientId ? { clientId: query.clientId } : {}),
+      ...(query.search
+        ? {
+            OR: [
+              {
+                receiptNumber: {
+                  contains: query.search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                referenceNumber: {
+                  contains: query.search,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+    const [data, total] = await Promise.all([
+      this.prisma.paymentReceipt.findMany({
+        where,
+        include: { client: true, allocations: { include: { invoice: true } } },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { [query.sortBy ?? 'receiptDate']: query.sortOrder ?? 'desc' },
+      }),
+      this.prisma.paymentReceipt.count({ where }),
+    ]);
+    return this.paginated(data, page, limit, total);
   }
 
   async addReceiptAllocation(

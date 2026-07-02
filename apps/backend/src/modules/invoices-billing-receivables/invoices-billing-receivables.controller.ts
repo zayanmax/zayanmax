@@ -76,6 +76,18 @@ export class InvoicesBillingReceivablesController {
     );
   }
 
+  @RequirePermissions('billing.view')
+  @Get('invoices/:id')
+  findInvoice(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.invoicesBillingReceivablesService.findInvoice(
+      user.companyId,
+      id,
+    );
+  }
+
   @RequirePermissions('billing.manage')
   @Post('invoices')
   createInvoice(
@@ -184,6 +196,18 @@ export class InvoicesBillingReceivablesController {
       dto,
       context.ipAddress,
       context.userAgent,
+    );
+  }
+
+  @RequirePermissions('billing.view')
+  @Get('payment-receipts')
+  findPaymentReceipts(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Query() query: BillingListQueryDto,
+  ) {
+    return this.invoicesBillingReceivablesService.findPaymentReceipts(
+      user.companyId,
+      query,
     );
   }
 

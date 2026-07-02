@@ -785,14 +785,40 @@ Latest Backend Security Cleanup & Frontend Readiness verification:
 - `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
 - `npm run build`: passed.
 
+## Completed Frontend Invoices, Billing & Receivables Pass
+
+- Added Billing frontend screens under `apps/frontend/src/features/billing`.
+- Added routes for `/billing`, `/billing/invoices`, `/billing/invoices/new`, `/billing/invoices/[id]`, `/billing/invoices/[id]/edit`, `/billing/receipts`, and `/billing/client-statements`.
+- Added billing overview with receivables summary, aging summary, invoice status counts, paid-this-period metadata, and overdue/at-risk invoice rows.
+- Added invoice list/search/filter/pagination, create form with dynamic line items, metadata edit form, detail summary, status actions, receipt allocation metadata, and credit/debit note metadata sections.
+- Added quotation-to-invoice conversion card on the new invoice page using the backend conversion endpoint.
+- Added payment receipt list/create flow and client statement display with running balance.
+- Added read-only backend endpoints for invoice detail and payment receipt list because direct frontend detail/list routes were blocked without them.
+- Updated permission-aware navigation to show Billing Overview, Invoices, Receipts, and Client Statements.
+- Added frontend documentation at `docs/frontend/invoices-billing-receivables.md`.
+
+Latest Frontend Invoices, Billing & Receivables verification:
+
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+
+Latest Backend Verification After Billing Read Endpoints:
+
+- `npm run prisma:validate`: passed. Prisma also reported the existing Prisma 7 config deprecation notice.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with existing Jest/Supertest/test typing warnings.
+- `npm test -- --runInBand`: 23 suites, 104 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+
 ## Not Started
 
-- Invoices, Billing & Receivables frontend screens.
 - Integration providers.
 - BullMQ queue wiring.
 - File/document binary storage abstraction.
 - Refactoring existing local approval flows into the generic approval engine.
-- Business frontend screens beyond foundation, Clients / CRM, Projects & Tasks, and Sales / Leads / Quotations.
+- Business frontend screens beyond foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, and Invoices / Billing / Receivables.
 - Invoice PDF generation, email/WhatsApp delivery, full accounting ledger posting, payment gateway integration, bank files, and reconciliation.
 
 ## Next Build Milestone

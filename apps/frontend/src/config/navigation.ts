@@ -88,9 +88,27 @@ export const navigationGroups: NavGroup[] = [
         permission: "sales.view",
       },
       {
-        label: "Billing",
+        label: "Billing Overview",
         href: "/billing",
         icon: ReceiptText,
+        permission: "billing.view",
+      },
+      {
+        label: "Invoices",
+        href: "/billing/invoices",
+        icon: FileText,
+        permission: "billing.view",
+      },
+      {
+        label: "Receipts",
+        href: "/billing/receipts",
+        icon: CreditCard,
+        permission: "billing.view",
+      },
+      {
+        label: "Client Statements",
+        href: "/billing/client-statements",
+        icon: WalletCards,
         permission: "billing.view",
       },
       {

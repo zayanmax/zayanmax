@@ -861,12 +861,12 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 12. Add accounting ledger integration only when the full accounting scope starts.
 13. Add GST filing, purchase invoice posting, invoice/quotation PDF generation, payment gateway integration, reconciliation, and bank payment files only when explicitly scoped.
 14. Add real report export generation, BullMQ export workers, and file storage integration only when explicitly scoped.
-15. Keep frontend blocked until these backend APIs settle.
+15. Continue frontend module screens on top of the existing API contracts when explicitly scoped.
 
 ## Latest Frontend State
 
 - Frontend foundation exists under `apps/frontend`.
-- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, and Sales / Leads / Quotations frontend passes are implemented.
+- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, Sales / Leads / Quotations, and Invoices / Billing / Receivables frontend passes are implemented.
 - Projects routes exist at `/projects`, `/projects/new`, `/projects/[id]`, and `/projects/[id]/edit`.
 - Tasks routes exist at `/tasks`, `/tasks/new`, `/tasks/[id]`, `/tasks/[id]/edit`, and `/tasks/kanban`.
 - Projects and Tasks use `projects.*` and `tasks.*` permissions from `/auth/me`.
@@ -876,10 +876,16 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 - Sales screens use `sales.view` for reads and `sales.manage` for mutations.
 - Opportunity stage list lookup is still missing in the backend; the opportunity form uses a raw optional stage ID.
 - Quotation edit is metadata-only because backend quotation update does not accept line item updates.
+- Billing routes exist at `/billing`, `/billing/invoices`, `/billing/receipts`, and `/billing/client-statements` with overview, list, create, edit, detail, receipt, statement, and quotation-conversion flows.
+- Billing screens use `billing.view` for reads and `billing.manage` for mutations.
+- Invoice edit is metadata-only because backend invoice update does not accept line item updates.
+- Billing date range filters are not exposed because billing list/summary endpoints do not currently accept date range filters.
+- Latest billing frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
+- Latest backend verification after billing read endpoints passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
 
 ## Next Frontend Work
 
-1. Build Invoices, Billing & Receivables screens.
+1. Build Finance, Expenses & Vendor Payments screens.
 2. Add a reusable user lookup component if owner assignment should support direct user selection.
 3. Add an opportunity stage list endpoint and frontend lookup if opportunity stages should be selectable by name.
 4. Add quotation line item update support only if the backend API is extended.
