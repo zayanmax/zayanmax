@@ -10,6 +10,12 @@ Backend API base path:
 /api/v1
 ```
 
+Frontend environment variable:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api/v1
+```
+
 OpenAPI tooling:
 
 ```text
@@ -156,3 +162,14 @@ Frontend code generation should still wrap generated calls with a small API clie
 - standard response unwrapping
 - standard error-code handling
 - pagination metadata
+
+## Current Frontend Client
+
+The `apps/frontend` foundation implements the wrapper manually in:
+
+```text
+apps/frontend/src/lib/api/client.ts
+apps/frontend/src/lib/api/endpoints.ts
+```
+
+The client stores `accessToken`, `refreshToken`, `sessionId`, and current user metadata in browser storage, retries one failed authorized request through `POST /auth/refresh`, and emits a global unauthorized event when the session cannot be recovered.

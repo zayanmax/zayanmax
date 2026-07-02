@@ -37,13 +37,14 @@ The project now has:
 - Approvals Workflow Engine module with workflow definitions, workflow steps, approval requests, step instances, action records, delegation metadata, escalation metadata, pending approvals, and entity history.
 - Dashboard, Reports & Analytics module with company, HR, project/task, CRM/sales, finance, inventory/assets, helpdesk, approvals, and calendar dashboard summaries plus report registry and export request metadata.
 - Backend platform hardening with Swagger/OpenAPI, health/readiness checks, session/device metadata foundation, password change, password reset token metadata, logout-all, request-context foundation, CORS frontend env support, and RBAC permission audit coverage.
+- Frontend foundation in `apps/frontend` with Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, Radix UI packages, Lucide React, TanStack Query, React Hook Form, Zod, Axios API client, Zustand auth state, protected dashboard shell, permission-aware navigation, auth pages, reusable UI foundations, and dashboard summary page.
 - Unit tests and e2e tests.
 
-No frontend has been created.
+Module CRUD frontend screens have not been created yet.
 
 ## Recommended First Action
 
-Start in:
+For backend checks, start in:
 
 ```text
 apps/backend
@@ -69,6 +70,29 @@ Seeded local admin:
 email: admin@zayan.test
 password: Password123
 ```
+
+For frontend checks, start in:
+
+```text
+apps/frontend
+```
+
+Run:
+
+```bash
+npm install
+npm run typecheck
+npm run lint
+npm run build
+```
+
+Frontend environment:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api/v1
+```
+
+The frontend currently has auth flow, protected layout, permission-aware navigation, reusable UI foundations, and dashboard summary cards only. Build the next module screen on top of the shared API client and layout rather than adding a second app shell.
 
 ## Must-Follow Backend Rules
 

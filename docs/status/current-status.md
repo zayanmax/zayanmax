@@ -6,7 +6,7 @@ Last updated: 2026-07-02
 
 - Backend foundation app now exists at `apps/backend`.
 - The top-level `backend/` folder remains documentation/source-of-truth material.
-- No frontend Next.js app has been generated yet.
+- Frontend foundation now exists at `apps/frontend`.
 - This folder was added to make handover and implementation tracking easier.
 - This directory is not currently a Git repository.
 
@@ -51,6 +51,20 @@ Read and summarized:
 - Added employee create/list/get/update/delete foundation with company scoping, employee code uniqueness, soft delete, and audit logging.
 - Added audit log read endpoint and audit creation helpers.
 - Added implementation plan at `docs/superpowers/plans/2026-06-12-backend-foundation.md`.
+
+## Completed Frontend Foundation
+
+- Created Next.js App Router frontend in `apps/frontend`.
+- Added React, TypeScript, Tailwind CSS v4, shadcn/ui components, Radix UI packages, Lucide React icons, TanStack Query, React Hook Form, Zod, Axios, and Zustand.
+- Added `NEXT_PUBLIC_API_BASE_URL` configuration with `.env.example`.
+- Added typed API client with standard backend response unwrapping, standard error mapping, bearer token injection, refresh-token retry, and unauthorized logout handling.
+- Added auth state foundation with access token, refresh token, session ID, current user, and permission storage.
+- Added auth pages for login, forgot password request, reset password foundation, and protected change password.
+- Added protected app shell with sidebar, topbar, profile menu, logout/logout-all actions, breadcrumbs, responsive navigation, loading state, and permission-aware navigation.
+- Added dashboard foundation backed by dashboard summary APIs with date range filters and summary cards for employees, attendance, projects/tasks, clients/sales, finance, approvals, helpdesk, calendar, and inventory/assets.
+- Added reusable frontend foundations: page header, data card, stat card, data table, status badge, confirm dialog, form field wrapper, search/filter bar, pagination controls, date range filter, loading, empty, error, and permission guard components.
+- Did not build module CRUD screens, file upload UI, real notifications, deep charts, or frontend code generation yet.
+- Added module documentation at `docs/frontend/frontend-foundation.md`.
 
 ## Completed Clients / CRM Module
 
