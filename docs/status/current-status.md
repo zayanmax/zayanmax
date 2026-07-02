@@ -66,6 +66,21 @@ Read and summarized:
 - Did not build module CRUD screens, file upload UI, real notifications, deep charts, or frontend code generation yet.
 - Added module documentation at `docs/frontend/frontend-foundation.md`.
 
+## Completed Employees And HR Master Data Frontend
+
+- Added employee routes: `/employees`, `/employees/new`, `/employees/[id]`, and `/employees/[id]/edit`.
+- Added employee list table with code, name, email/phone, department, designation, branch, status, joining date, actions, search, filters, pagination, loading, empty, and error states.
+- Added employee create/edit form using React Hook Form and Zod, with sections for basic details, contact details, assignment details, status display, and joining details.
+- Added employee detail page with profile, work, contact, assignment, status, and metadata sections.
+- Added employee delete action using the reusable confirm dialog.
+- Added HR master data routes: `/settings/branches`, `/settings/departments`, and `/settings/designations`.
+- Added branch, department, and designation list/create/edit modal screens with search, status display, loading, empty, and error states.
+- Added feature folders and API/query/mutation hooks for employees, branches, departments, and designations.
+- Updated permission-aware navigation for Employees and HR settings.
+- Did not add attendance, leave, payroll, performance, recruitment, or deeper dashboard screens.
+- Did not modify the backend.
+- Documented backend limitations in `docs/frontend/employees-hr-master-data.md`.
+
 ## Completed Clients / CRM Module
 
 - Added Clients / CRM module in `apps/backend/src/modules/clients`.

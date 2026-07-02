@@ -45,7 +45,7 @@ export const navigationGroups: NavGroup[] = [
   {
     label: "Operations",
     items: [
-      { label: "HR", href: "/hr/employees", icon: Users, permission: "employees.view" },
+      { label: "Employees", href: "/employees", icon: Users, permission: "employees.view" },
       {
         label: "Clients & CRM",
         href: "/clients",
@@ -116,6 +116,24 @@ export const navigationGroups: NavGroup[] = [
         label: "Settings",
         href: "/settings",
         icon: Settings,
+        permission: "settings.view",
+      },
+      {
+        label: "Branches",
+        href: "/settings/branches",
+        icon: Building2,
+        permission: "settings.view",
+      },
+      {
+        label: "Departments",
+        href: "/settings/departments",
+        icon: Users,
+        permission: "settings.view",
+      },
+      {
+        label: "Designations",
+        href: "/settings/designations",
+        icon: ClipboardList,
         permission: "settings.view",
       },
       {

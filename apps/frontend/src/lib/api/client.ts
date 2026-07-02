@@ -10,7 +10,11 @@ import {
   getStoredSession,
   updateStoredTokens,
 } from "@/lib/auth/token-storage";
-import type { StandardApiError, StandardApiResponse } from "@/types/api";
+import type {
+  PaginatedResult,
+  StandardApiError,
+  StandardApiResponse,
+} from "@/types/api";
 import type { RefreshResponse } from "@/types/auth";
 
 type ApiRequestConfig = AxiosRequestConfig & {
@@ -79,14 +83,25 @@ apiClient.interceptors.response.use(
   },
 );
 
-function unwrapResponse<T>(payload: StandardApiResponse<T> | T): T {
+function unwrapResponse<T>(
+  payload: (StandardApiResponse<T> & { meta?: unknown }) | T,
+): T | PaginatedResult<T> {
   if (
     payload &&
     typeof payload === "object" &&
     "success" in payload &&
     (payload as StandardApiResponse<T>).success === true
   ) {
-    return (payload as StandardApiResponse<T>).data;
+    const response = payload as StandardApiResponse<T> & {
+      meta?: PaginatedResult<T>["meta"];
+    };
+    if (response.meta) {
+      return {
+        data: response.data as T[],
+        meta: response.meta,
+      } as PaginatedResult<T>;
+    }
+    return response.data;
   }
 
   return payload as T;
