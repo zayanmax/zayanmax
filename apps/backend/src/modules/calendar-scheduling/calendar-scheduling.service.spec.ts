@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { CalendarSchedulingService } from './calendar-scheduling.service';
 import {
   CalendarEntityTypeDto,
@@ -227,6 +227,34 @@ describe('CalendarSchedulingService', () => {
         },
       }),
     );
+  });
+
+  it('loads event detail with attendees, bookings, and reminders', async () => {
+    prisma.calendarEvent.findFirst.mockResolvedValueOnce({
+      id: 'event-id',
+      title: 'Planning meeting',
+      attendees: [{ userId: 'user-id' }],
+      resourceBookings: [{ resourceId: 'room-id' }],
+      reminders: [{ id: 'reminder-id' }],
+    });
+    const service = new CalendarSchedulingService(prisma as never);
+
+    const result = await service.findEvent('company-id', 'event-id');
+
+    expect(result.id).toBe('event-id');
+    expect(prisma.calendarEvent.findFirst).toHaveBeenCalledWith({
+      where: { id: 'event-id', companyId: 'company-id', deletedAt: null },
+      include: {
+        attendees: true,
+        resourceBookings: { include: { resource: true } },
+        reminders: true,
+      },
+    });
+
+    prisma.calendarEvent.findFirst.mockResolvedValueOnce(null);
+    await expect(
+      service.findEvent('company-id', 'missing-event'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('prevents duplicate active resource names per company', async () => {

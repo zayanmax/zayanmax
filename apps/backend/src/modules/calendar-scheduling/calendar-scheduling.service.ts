@@ -214,6 +214,19 @@ export class CalendarSchedulingService {
     return this.paginated(data, page, limit, total);
   }
 
+  async findEvent(companyId: string, id: string) {
+    const event = await this.prisma.calendarEvent.findFirst({
+      where: { id, companyId, deletedAt: null },
+      include: {
+        attendees: true,
+        resourceBookings: { include: { resource: true } },
+        reminders: true,
+      },
+    });
+    if (!event) throw new NotFoundException('Calendar event not found');
+    return event;
+  }
+
   async findMyCalendar(
     companyId: string,
     actorId: string,

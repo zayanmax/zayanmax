@@ -930,13 +930,43 @@ Latest Backend Verification After Announcement Detail Endpoint:
 - `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
 - `npm run build`: passed.
 
+## Completed Frontend Calendar, Meetings & Resource Booking Pass
+
+- Added Calendar frontend screens under `apps/frontend/src/features/calendar`.
+- Added routes for `/calendar`, `/calendar/events`, `/calendar/events/new`, `/calendar/events/[id]`, `/calendar/events/[id]/edit`, `/calendar/my`, `/calendar/company`, `/calendar/resources`, and `/calendar/resource-bookings`.
+- Added calendar overview cards for today events, upcoming meetings, my events, resource bookings, and cancelled/postponed events.
+- Added event list/search/filter/pagination with event type, status, date range, and resource filtering.
+- Added event create/edit forms with recurrence metadata, linked entity metadata, attendees, resource booking metadata, and reminder metadata where supported.
+- Added event detail page with summary, attendees and current-user RSVP actions, resource bookings, reminder metadata, linked entity, status actions, and delete confirmation.
+- Added my calendar and company calendar list/card views.
+- Added resource list/create and resource booking list/create screens.
+- Added minimal backend `GET /api/v1/calendar/events/:id` endpoint because event detail/edit routes were blocked without it.
+- Updated permission-aware navigation to show Calendar Overview, Events, My Calendar, Company Calendar, Resources, and Resource Bookings.
+- Kept the frontend metadata-only: no Google Calendar integration, real reminders, BullMQ workers, push notifications, WebSocket/live updates, helpdesk, approvals, reports, or deep dashboard integrations.
+- Added frontend documentation at `docs/frontend/calendar-scheduling.md`.
+
+Latest Frontend Calendar, Meetings & Resource Booking verification:
+
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+
+Latest Backend Verification After Calendar Event Detail Endpoint:
+
+- `npm run prisma:validate`: passed. Prisma also reported the existing Prisma 7 config deprecation notice.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed with existing Jest/Supertest/test typing warnings.
+- `npm test -- --runInBand`: 23 suites, 109 tests passed.
+- `npm run test:e2e -- --runInBand`: 1 suite, 21 tests passed.
+- `npm run build`: passed.
+
 ## Not Started
 
 - Integration providers.
 - BullMQ queue wiring.
 - File/document binary storage abstraction.
 - Refactoring existing local approval flows into the generic approval engine.
-- Remaining business frontend screens beyond the completed foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendors, Purchase / Inventory / Assets, Documents / Knowledge Base, and Communication / Notifications passes.
+- Remaining business frontend screens beyond the completed foundation, Clients / CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendors, Purchase / Inventory / Assets, Documents / Knowledge Base, Communication / Notifications, and Calendar / Resource Booking passes.
 - Invoice PDF generation, email/WhatsApp delivery, full accounting ledger posting, payment gateway integration, bank files, and reconciliation.
 
 ## Next Build Milestone

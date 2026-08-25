@@ -1,10 +1,10 @@
 # Calendar, Meetings & Scheduling Module
 
-Last updated: 2026-06-13
+Last updated: 2026-07-03
 
 ## Scope
 
-Implemented backend-only Calendar, Meetings & Scheduling foundation.
+Implemented Calendar, Meetings & Scheduling backend foundation and frontend metadata screens.
 
 Included:
 
@@ -24,11 +24,13 @@ Included:
 
 Excluded for now:
 
-- Frontend screens.
 - Google Calendar integration.
 - Real reminders.
 - BullMQ workers.
 - External provider calls or scheduled execution.
+- Push notifications.
+- WebSocket/live updates.
+- Helpdesk, approval, reports, and deep dashboard integrations.
 
 ## Prisma Models
 
@@ -78,6 +80,7 @@ No role names are hardcoded for access checks.
 Calendar event routes:
 
 - `GET /api/v1/calendar/events`
+- `GET /api/v1/calendar/events/:id`
 - `GET /api/v1/calendar/my`
 - `GET /api/v1/calendar/company`
 - `POST /api/v1/calendar/events`
@@ -95,6 +98,22 @@ Resource booking routes:
 
 - `GET /api/v1/calendar/resource-bookings`
 - `POST /api/v1/calendar/resources/:id/bookings`
+
+## Frontend Screens
+
+Implemented under `apps/frontend`:
+
+- `/calendar`
+- `/calendar/events`
+- `/calendar/events/new`
+- `/calendar/events/:id`
+- `/calendar/events/:id/edit`
+- `/calendar/my`
+- `/calendar/company`
+- `/calendar/resources`
+- `/calendar/resource-bookings`
+
+Frontend behavior remains metadata-only. It does not integrate Google Calendar, send reminders, enqueue BullMQ jobs, execute recurrence expansion, push notifications, or provide live updates.
 
 ## Filters
 

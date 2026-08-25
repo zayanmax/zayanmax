@@ -161,6 +161,15 @@ Communication and notifications:
 - `GET /api/v1/notification-preferences`
 - `GET /api/v1/reminders`
 
+Calendar:
+
+- `GET /api/v1/calendar/events`
+- `GET /api/v1/calendar/events/:id`
+- `GET /api/v1/calendar/my`
+- `GET /api/v1/calendar/company`
+- `GET /api/v1/calendar/resources`
+- `GET /api/v1/calendar/resource-bookings`
+
 ## OpenAPI Generation Notes
 
 `/api/docs-json` includes bearer auth, module tags, standard response/error schemas, and examples for high-use DTOs including auth, dashboard filters, employees, clients, projects, tasks, and invoices.

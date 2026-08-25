@@ -1102,6 +1102,7 @@ Permission keys:
 ### Calendar Event Routes
 
 - `GET /api/v1/calendar/events`
+- `GET /api/v1/calendar/events/:id`
 - `GET /api/v1/calendar/my`
 - `GET /api/v1/calendar/company`
 - `POST /api/v1/calendar/events`
@@ -1191,7 +1192,7 @@ Resource booking lists also support:
 
 ### Calendar Exclusions
 
-Calendar APIs store scheduling and reminder metadata only. They do not integrate Google Calendar, send reminders, enqueue BullMQ jobs, execute recurrence expansion, call providers, or implement frontend screens.
+Calendar APIs store scheduling and reminder metadata only. They do not integrate Google Calendar, send reminders, enqueue BullMQ jobs, execute recurrence expansion, call providers, push notifications, or provide live updates.
 
 ## Helpdesk / Internal Tickets APIs
 

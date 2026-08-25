@@ -866,7 +866,7 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 ## Latest Frontend State
 
 - Frontend foundation exists under `apps/frontend`.
-- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendor Payments, Purchase / Inventory / Asset Management, Documents / Knowledge Base, and Communication / Notifications frontend passes are implemented.
+- Authentication, protected shell, dashboard foundation, Employees + HR master data, Clients & CRM, Projects & Tasks, Sales / Leads / Quotations, Invoices / Billing / Receivables, Finance / Expenses / Vendor Payments, Purchase / Inventory / Asset Management, Documents / Knowledge Base, Communication / Notifications, and Calendar / Resource Booking frontend passes are implemented.
 - Projects routes exist at `/projects`, `/projects/new`, `/projects/[id]`, and `/projects/[id]/edit`.
 - Tasks routes exist at `/tasks`, `/tasks/new`, `/tasks/[id]`, `/tasks/[id]/edit`, and `/tasks/kanban`.
 - Projects and Tasks use `projects.*` and `tasks.*` permissions from `/auth/me`.
@@ -912,10 +912,18 @@ Lint exits successfully with warnings in Jest/Supertest typing only.
 - Notification center supports individual read/unread actions only; there is no mark-all-read endpoint.
 - Latest Communication/Notifications frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
 - Latest backend verification after announcement detail endpoint passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
+- Calendar routes exist at `/calendar`, `/calendar/events`, `/calendar/events/new`, `/calendar/events/[id]`, `/calendar/events/[id]/edit`, `/calendar/my`, `/calendar/company`, `/calendar/resources`, and `/calendar/resource-bookings`.
+- Calendar screens use `calendar.view` for reads and RSVP, and `calendar.manage` for create/update/status/delete/resource/booking mutations.
+- Backend gained a minimal frontend-blocking read endpoint for calendar event detail: `GET /api/v1/calendar/events/:id`.
+- Event attendees, resource bookings, linked entity, and reminders are create-time metadata only because backend event update does not update child rows.
+- Resource event filtering on `/calendar/events` is client-side for the current page because backend event list does not accept `resourceId`.
+- Resources and resource bookings remain list/create only because backend update/delete/detail routes are not exposed.
+- Latest Calendar/Resource Booking frontend verification passed: `npm run typecheck`, `npm run lint`, and `npm run build`.
+- Latest backend verification after calendar event detail endpoint passed: `npm run prisma:validate`, `npm run typecheck`, `npm run lint`, `npm test -- --runInBand`, `npm run test:e2e -- --runInBand`, and `npm run build`.
 
 ## Next Frontend Work
 
-1. Build Calendar, Meetings & Resource Booking screens.
+1. Build Helpdesk / Internal Tickets screens.
 2. Add a reusable user lookup component if owner assignment should support direct user selection.
 3. Add an opportunity stage list endpoint and frontend lookup if opportunity stages should be selectable by name.
 4. Add quotation line item update support only if the backend API is extended.

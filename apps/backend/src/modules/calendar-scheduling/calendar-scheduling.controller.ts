@@ -71,6 +71,15 @@ export class CalendarSchedulingController {
     return this.calendarSchedulingService.findEvents(user.companyId, query);
   }
 
+  @RequirePermissions('calendar.view')
+  @Get('events/:id')
+  findEvent(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+  ) {
+    return this.calendarSchedulingService.findEvent(user.companyId, id);
+  }
+
   @RequirePermissions('calendar.manage')
   @Post('events')
   createEvent(
