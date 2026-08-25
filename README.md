@@ -50,12 +50,9 @@ The repository contains a working NestJS API and a Next.js application. The prod
 apps/
   backend/     Runnable NestJS API, Prisma schema, migrations, and tests
   frontend/    Runnable Next.js application
-architecture/  System architecture and design documents
-backend/       Backend reference and design documents
-docs/          API, module, frontend, security, status, and handover notes
 ```
 
-The runnable applications are under `apps/`. The top-level `backend/` directory contains reference documentation rather than the NestJS runtime.
+The runnable applications are under `apps/`. Architecture notes, API references, implementation plans, prompts, status reports, and handover material are maintained separately on the [documentation branch](https://github.com/Naveen4703/zayanmax/tree/docs).
 
 ## Run locally
 
@@ -145,17 +142,17 @@ The following infrastructure is not complete:
 - Invoice and quotation PDF generation
 - Production deployment configuration and operational monitoring
 
-See [current status](docs/status/current-status.md) and [next-session handover](docs/handover/next-session.md) for detailed implementation notes.
+See [current status](https://github.com/Naveen4703/zayanmax/blob/docs/docs/status/current-status.md) and [next-session handover](https://github.com/Naveen4703/zayanmax/blob/docs/docs/handover/next-session.md) for detailed implementation notes.
 
 ## Documentation
 
-- [Documentation index](docs/README.md)
-- [System architecture](architecture/system-architecture.md)
-- [System design](architecture/system-design.md)
-- [API contract](docs/api/api-contract.md)
-- [Swagger and OpenAPI](docs/api/swagger-openapi.md)
-- [Authentication and permissions](docs/security/auth-rbac.md)
-- [Backend platform hardening](docs/backend/platform-hardening.md)
+- [Documentation index](https://github.com/Naveen4703/zayanmax/tree/docs)
+- [System architecture](https://github.com/Naveen4703/zayanmax/blob/docs/architecture/system-architecture.md)
+- [System design](https://github.com/Naveen4703/zayanmax/blob/docs/architecture/system-design.md)
+- [API contract](https://github.com/Naveen4703/zayanmax/blob/docs/docs/api/api-contract.md)
+- [Swagger and OpenAPI](https://github.com/Naveen4703/zayanmax/blob/docs/docs/api/swagger-openapi.md)
+- [Authentication and permissions](https://github.com/Naveen4703/zayanmax/blob/docs/docs/security/auth-rbac.md)
+- [Backend platform hardening](https://github.com/Naveen4703/zayanmax/blob/docs/docs/backend/platform-hardening.md)
 
 ## Project note
 
