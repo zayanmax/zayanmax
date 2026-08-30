@@ -21,6 +21,7 @@ import { AttendanceLeaveService } from './attendance-leave.service';
 import {
   CreateLeaveRequestDto,
   CreateLeaveTypeDto,
+  LeaveBalanceQueryDto,
   LeaveRequestQueryDto,
   ReviewLeaveRequestDto,
   UpsertLeaveBalanceDto,
@@ -76,12 +77,31 @@ export class LeavesController {
   }
 
   @RequirePermissions('leaves.view')
+  @Get('balances')
+  findBalances(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Query() query: LeaveBalanceQueryDto,
+  ) {
+    return this.attendanceLeaveService.findLeaveBalances(
+      user.companyId,
+      user.employeeId,
+      user.permissions.includes('leaves.approve'),
+      query,
+    );
+  }
+
+  @RequirePermissions('leaves.view')
   @Get('requests')
   findRequests(
     @CurrentUserDecorator() user: CurrentUser,
     @Query() query: LeaveRequestQueryDto,
   ) {
-    return this.attendanceLeaveService.findLeaveRequests(user.companyId, query);
+    return this.attendanceLeaveService.findLeaveRequests(
+      user.companyId,
+      query,
+      user.employeeId,
+      user.permissions.includes('leaves.approve'),
+    );
   }
 
   @RequirePermissions('leaves.request')
@@ -95,7 +115,29 @@ export class LeavesController {
     return this.attendanceLeaveService.createLeaveRequest(
       user.companyId,
       user.id,
+      user.employeeId,
+      user.permissions.includes('leaves.approve'),
       dto,
+      ipAddress,
+      request.headers['user-agent'],
+    );
+  }
+
+
+  @RequirePermissions('leaves.request')
+  @Patch('requests/:id/cancel')
+  cancelRequest(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Param('id') id: string,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    return this.attendanceLeaveService.cancelLeaveRequest(
+      user.companyId,
+      id,
+      user.id,
+      user.employeeId,
+      user.permissions.includes('leaves.approve'),
       ipAddress,
       request.headers['user-agent'],
     );

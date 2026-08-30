@@ -1,5 +1,4 @@
 export type DemoModuleKey =
-  | "leave"
   | "payroll"
   | "performance"
   | "recruitment"
@@ -54,68 +53,6 @@ function record(id: string, status: string, values: Record<string, string>): Dem
 }
 
 export const demoModuleConfigs: Record<DemoModuleKey, DemoModuleConfig> = {
-  leave: {
-    key: "leave",
-    title: "Leave Management",
-    description:
-      "Manage leave balances, employee requests, multi-step review, holidays, approvals, rejections, and cancellations.",
-    singular: "leave request",
-    permission: "leaves.view",
-    statusOptions: ["PENDING", "APPROVED", "REJECTED", "CANCELLED"],
-    fields: [
-      { key: "employee", label: "Employee", placeholder: "Employee name" },
-      { key: "type", label: "Leave type", placeholder: "Casual leave" },
-      { key: "from", label: "From", inputType: "date" },
-      { key: "to", label: "To", inputType: "date" },
-      { key: "days", label: "Days", placeholder: "2" },
-      { key: "reason", label: "Reason", placeholder: "Reason for leave" },
-    ],
-    initialRows: [
-      record("lev-001", "PENDING", {
-        employee: "Meera Reddy",
-        type: "Casual Leave",
-        from: "2026-08-31",
-        to: "2026-09-01",
-        days: "2",
-        reason: "Family function",
-      }),
-      record("lev-002", "APPROVED", {
-        employee: "Rahul Verma",
-        type: "Sick Leave",
-        from: "2026-08-27",
-        to: "2026-08-27",
-        days: "1",
-        reason: "Medical rest",
-      }),
-      record("lev-003", "APPROVED", {
-        employee: "Sana Khan",
-        type: "Work From Home",
-        from: "2026-08-29",
-        to: "2026-08-29",
-        days: "1",
-        reason: "Client handoff",
-      }),
-      record("lev-004", "REJECTED", {
-        employee: "Vikram Rao",
-        type: "Earned Leave",
-        from: "2026-09-03",
-        to: "2026-09-07",
-        days: "5",
-        reason: "Travel",
-      }),
-    ],
-    stats: [
-      { label: "Requests", helper: "Current view" },
-      { label: "Pending", helper: "Awaiting action", status: "PENDING" },
-      { label: "Approved", helper: "Current period", status: "APPROVED" },
-      { label: "Team availability", helper: "Next 7 days", value: "88%" },
-    ],
-    workflow: [
-      { title: "Request", description: "Employees submit dates, leave type, and reason against their available balance." },
-      { title: "Approve", description: "Managers or HR approve, reject, cancel, or request a correction." },
-      { title: "Synchronize", description: "Approved leave is reflected in attendance, calendar, payroll, and reports." },
-    ],
-  },
   payroll: {
     key: "payroll",
     title: "Payroll",

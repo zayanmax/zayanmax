@@ -39,7 +39,7 @@ const groups = [
     items: [
       { label: "Employees", href: "/employees", icon: Users, source: "API-backed" },
       { label: "Attendance", href: "/attendance", icon: ClipboardCheck, source: "API-backed" },
-      { label: "Leave", href: "/leave", icon: CalendarDays, source: "Presenter data" },
+      { label: "Leave", href: "/leave", icon: CalendarDays, source: "API-backed" },
       { label: "Payroll", href: "/payroll", icon: CreditCard, source: "Presenter data" },
       { label: "Performance", href: "/performance", icon: Target, source: "Presenter data" },
       { label: "Recruitment", href: "/recruitment", icon: BriefcaseBusiness, source: "Presenter data" },

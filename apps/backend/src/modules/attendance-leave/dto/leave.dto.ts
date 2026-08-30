@@ -11,6 +11,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { LeaveRequestStatusDto } from './leave-request-status.dto';
 
@@ -65,6 +66,23 @@ export class UpsertLeaveBalanceDto {
   used?: number;
 }
 
+export class LeaveBalanceQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsUUID()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  leaveTypeId?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(2000)
+  @Max(2100)
+  year?: number;
+}
+
 export class CreateLeaveRequestDto {
   @IsUUID()
   employeeId!: string;
@@ -78,9 +96,10 @@ export class CreateLeaveRequestDto {
   @IsISO8601({ strict: true })
   toDate!: string;
 
+  @IsOptional()
   @IsNumber()
   @Min(0.5)
-  days!: number;
+  days?: number;
 
   @IsOptional()
   @IsString()

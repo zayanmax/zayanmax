@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { AttendanceLeaveService } from './attendance-leave.service';
@@ -10,6 +11,7 @@ import { LeaveRequestStatusDto } from './dto/leave-request-status.dto';
 
 describe('AttendanceLeaveService', () => {
   const prisma = {
+    $transaction: jest.fn(),
     employee: {
       findFirst: jest.fn(),
     },
@@ -41,6 +43,8 @@ describe('AttendanceLeaveService', () => {
     },
     leaveBalance: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
@@ -65,8 +69,20 @@ describe('AttendanceLeaveService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    prisma.$transaction.mockImplementation(
+      async (callback: (transaction: typeof prisma) => Promise<unknown>) =>
+        callback(prisma),
+    );
     prisma.employee.findFirst.mockResolvedValue({ id: 'employee-id' });
     prisma.shift.findFirst.mockResolvedValue({ id: 'shift-id' });
+    prisma.leaveType.findFirst.mockResolvedValue({
+      id: 'leave-type-id',
+      companyId: 'company-id',
+      annualAllowance: 12,
+      requiresApproval: true,
+      paid: true,
+      status: 'ACTIVE',
+    });
   });
 
   it('creates company-scoped shifts and audits the action', async () => {
@@ -514,6 +530,311 @@ describe('AttendanceLeaveService', () => {
     expect(prisma.attendanceCorrectionRequest.update).not.toHaveBeenCalled();
   });
 
+  it('lists only company leave balances with filters and authoritative remaining values', async () => {
+    prisma.leaveBalance.findMany.mockResolvedValue([
+      {
+        id: 'balance-id',
+        companyId: 'company-id',
+        employeeId: 'employee-id',
+        leaveTypeId: 'leave-type-id',
+        year: 2026,
+        openingBalance: 10,
+        accrued: 3,
+        used: 5,
+        remaining: 99,
+        employee: {
+          id: 'employee-id',
+          employeeCode: 'ZM001',
+          firstName: 'Aarav',
+          lastName: 'Mehta',
+        },
+        leaveType: { id: 'leave-type-id', name: 'Casual Leave', code: 'CL' },
+      },
+    ]);
+    prisma.leaveBalance.count.mockResolvedValue(1);
+    const service = new AttendanceLeaveService(prisma as never);
+
+    const result = await service.findLeaveBalances(
+      'company-id',
+      'employee-id',
+      true,
+      {
+        page: 1,
+        limit: 20,
+        employeeId: 'employee-id',
+        leaveTypeId: 'leave-type-id',
+        year: 2026,
+      },
+    );
+
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({ remaining: 8 }),
+    );
+    expect(prisma.leaveBalance.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          companyId: 'company-id',
+          employeeId: 'employee-id',
+          leaveTypeId: 'leave-type-id',
+          year: 2026,
+        }),
+      }),
+    );
+  });
+
+  it('prevents a normal user from reading another employee leave balance', async () => {
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await expect(
+      service.findLeaveBalances('company-id', 'employee-id', false, {
+        employeeId: 'other-employee-id',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(prisma.leaveBalance.findMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects cross-company employee and leave type balance references', async () => {
+    const service = new AttendanceLeaveService(prisma as never);
+    prisma.employee.findFirst.mockResolvedValueOnce(null);
+
+    await expect(
+      service.upsertLeaveBalance('company-id', 'actor-id', {
+        employeeId: 'foreign-employee-id',
+        leaveTypeId: 'leave-type-id',
+        year: 2026,
+        openingBalance: 10,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    prisma.employee.findFirst.mockResolvedValueOnce({ id: 'employee-id' });
+    prisma.leaveType.findFirst.mockResolvedValueOnce(null);
+    await expect(
+      service.upsertLeaveBalance('company-id', 'actor-id', {
+        employeeId: 'employee-id',
+        leaveTypeId: 'foreign-leave-type-id',
+        year: 2026,
+        openingBalance: 10,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.leaveBalance.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects negative and overused leave balance administration', async () => {
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await expect(
+      service.upsertLeaveBalance('company-id', 'actor-id', {
+        employeeId: 'employee-id',
+        leaveTypeId: 'leave-type-id',
+        year: 2026,
+        openingBalance: -1,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    await expect(
+      service.upsertLeaveBalance('company-id', 'actor-id', {
+        employeeId: 'employee-id',
+        leaveTypeId: 'leave-type-id',
+        year: 2026,
+        openingBalance: 5,
+        accrued: 1,
+        used: 7,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.leaveBalance.create).not.toHaveBeenCalled();
+  });
+
+  it('preserves consumed leave when an administrator omits used during balance update', async () => {
+    prisma.leaveBalance.findFirst.mockResolvedValue({
+      id: 'balance-id',
+      openingBalance: 10,
+      accrued: 2,
+      used: 4,
+      remaining: 8,
+    });
+    prisma.leaveBalance.update.mockResolvedValue({ id: 'balance-id' });
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await service.upsertLeaveBalance('company-id', 'actor-id', {
+      employeeId: 'employee-id',
+      leaveTypeId: 'leave-type-id',
+      year: 2026,
+      openingBalance: 12,
+    });
+
+    expect(prisma.leaveBalance.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          openingBalance: 12,
+          accrued: 2,
+          used: 4,
+          remaining: 10,
+        }),
+      }),
+    );
+  });
+
+  it('creates leave with an inclusive server-calculated day count', async () => {
+    prisma.leaveRequest.findFirst.mockResolvedValue(null);
+    prisma.leaveRequest.create.mockResolvedValue({
+      id: 'leave-request-id',
+      days: 3,
+      status: 'PENDING',
+    });
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await service.createLeaveRequest(
+      'company-id',
+      'actor-id',
+      'employee-id',
+      false,
+      {
+        employeeId: 'employee-id',
+        leaveTypeId: 'leave-type-id',
+        fromDate: '2026-06-10',
+        toDate: '2026-06-12',
+        days: 99,
+        reason: 'Family event',
+      },
+    );
+
+    expect(prisma.leaveRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ days: 3 }),
+      }),
+    );
+  });
+
+  it('rejects cross-company leave request references', async () => {
+    const service = new AttendanceLeaveService(prisma as never);
+    prisma.employee.findFirst.mockResolvedValueOnce(null);
+
+    await expect(
+      service.createLeaveRequest(
+        'company-id',
+        'actor-id',
+        'foreign-employee-id',
+        false,
+        {
+          employeeId: 'foreign-employee-id',
+          leaveTypeId: 'leave-type-id',
+          fromDate: '2026-06-10',
+          toDate: '2026-06-12',
+        },
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    prisma.employee.findFirst.mockResolvedValueOnce({ id: 'employee-id' });
+    prisma.leaveType.findFirst.mockResolvedValueOnce(null);
+    await expect(
+      service.createLeaveRequest(
+        'company-id',
+        'actor-id',
+        'employee-id',
+        false,
+        {
+          employeeId: 'employee-id',
+          leaveTypeId: 'foreign-leave-type-id',
+          fromDate: '2026-06-10',
+          toDate: '2026-06-12',
+        },
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.leaveRequest.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects another employee request from a normal requester', async () => {
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await expect(
+      service.createLeaveRequest(
+        'company-id',
+        'actor-id',
+        'employee-id',
+        false,
+        {
+          employeeId: 'other-employee-id',
+          leaveTypeId: 'leave-type-id',
+          fromDate: '2026-06-10',
+          toDate: '2026-06-12',
+        },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.leaveRequest.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects reversed and cross-year leave date ranges', async () => {
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await expect(
+      service.createLeaveRequest(
+        'company-id',
+        'actor-id',
+        'employee-id',
+        false,
+        {
+          employeeId: 'employee-id',
+          leaveTypeId: 'leave-type-id',
+          fromDate: '2026-06-12',
+          toDate: '2026-06-10',
+        },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    await expect(
+      service.createLeaveRequest(
+        'company-id',
+        'actor-id',
+        'employee-id',
+        false,
+        {
+          employeeId: 'employee-id',
+          leaveTypeId: 'leave-type-id',
+          fromDate: '2026-12-31',
+          toDate: '2027-01-01',
+        },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.leaveRequest.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects leave overlapping an active request', async () => {
+    prisma.leaveRequest.findFirst.mockResolvedValue({
+      id: 'overlap-id',
+      status: 'APPROVED',
+    });
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await expect(
+      service.createLeaveRequest(
+        'company-id',
+        'actor-id',
+        'employee-id',
+        false,
+        {
+          employeeId: 'employee-id',
+          leaveTypeId: 'leave-type-id',
+          fromDate: '2026-06-10',
+          toDate: '2026-06-12',
+        },
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(prisma.leaveRequest.findFirst).toHaveBeenCalledWith({
+      where: {
+        companyId: 'company-id',
+        employeeId: 'employee-id',
+        deletedAt: null,
+        status: { in: ['PENDING', 'APPROVED'] },
+        fromDate: { lte: new Date('2026-06-12T00:00:00.000Z') },
+        toDate: { gte: new Date('2026-06-10T00:00:00.000Z') },
+      },
+      select: { id: true },
+    });
+    expect(prisma.leaveRequest.create).not.toHaveBeenCalled();
+  });
+
   it('approves leave requests and decrements the matching leave balance', async () => {
     prisma.leaveRequest.findFirst.mockResolvedValue({
       id: 'leave-request-id',
@@ -554,6 +875,263 @@ describe('AttendanceLeaveService', () => {
         data: expect.objectContaining({ used: 2, remaining: 8 }),
       }),
     );
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects approval when the matching leave balance is insufficient', async () => {
+    prisma.leaveRequest.findFirst.mockResolvedValue({
+      id: 'leave-request-id',
+      companyId: 'company-id',
+      employeeId: 'employee-id',
+      leaveTypeId: 'leave-type-id',
+      days: 4,
+      status: 'PENDING',
+      fromDate: new Date('2026-06-15T00:00:00.000Z'),
+    });
+    prisma.leaveBalance.findFirst.mockResolvedValue({
+      id: 'balance-id',
+      remaining: 2,
+      used: 8,
+    });
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await expect(
+      service.reviewLeaveRequest(
+        'company-id',
+        'leave-request-id',
+        'actor-id',
+        { status: LeaveRequestStatusDto.APPROVED },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.leaveRequest.update).not.toHaveBeenCalled();
+    expect(prisma.leaveBalance.update).not.toHaveBeenCalled();
+  });
+
+  it('does not update the request when transactional balance mutation fails', async () => {
+    prisma.leaveRequest.findFirst.mockResolvedValue({
+      id: 'leave-request-id',
+      companyId: 'company-id',
+      employeeId: 'employee-id',
+      leaveTypeId: 'leave-type-id',
+      days: 2,
+      status: 'PENDING',
+      fromDate: new Date('2026-06-15T00:00:00.000Z'),
+    });
+    prisma.leaveBalance.findFirst.mockResolvedValue({
+      id: 'balance-id',
+      remaining: 10,
+      used: 0,
+    });
+    prisma.leaveBalance.update.mockRejectedValue(new Error('database failure'));
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await expect(
+      service.reviewLeaveRequest(
+        'company-id',
+        'leave-request-id',
+        'actor-id',
+        { status: LeaveRequestStatusDto.APPROVED },
+      ),
+    ).rejects.toThrow('database failure');
+    expect(prisma.leaveRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('keeps leave review company-scoped and blocks cancelled review', async () => {
+    const service = new AttendanceLeaveService(prisma as never);
+    prisma.leaveRequest.findFirst.mockResolvedValueOnce(null);
+    await expect(
+      service.reviewLeaveRequest(
+        'company-id',
+        'foreign-request-id',
+        'actor-id',
+        { status: LeaveRequestStatusDto.APPROVED },
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.leaveRequest.findFirst).toHaveBeenLastCalledWith({
+      where: {
+        id: 'foreign-request-id',
+        companyId: 'company-id',
+        deletedAt: null,
+      },
+    });
+
+    prisma.leaveRequest.findFirst.mockResolvedValueOnce({
+      id: 'leave-request-id',
+      status: 'CANCELLED',
+    });
+    await expect(
+      service.reviewLeaveRequest(
+        'company-id',
+        'leave-request-id',
+        'actor-id',
+        { status: LeaveRequestStatusDto.REJECTED },
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.leaveRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects leave without consuming balance and blocks repeated review', async () => {
+    prisma.leaveRequest.findFirst.mockResolvedValueOnce({
+      id: 'leave-request-id',
+      companyId: 'company-id',
+      employeeId: 'employee-id',
+      leaveTypeId: 'leave-type-id',
+      days: 2,
+      status: 'PENDING',
+      fromDate: new Date('2026-06-15T00:00:00.000Z'),
+    });
+    prisma.leaveRequest.update.mockResolvedValue({
+      id: 'leave-request-id',
+      status: LeaveRequestStatusDto.REJECTED,
+    });
+    const service = new AttendanceLeaveService(prisma as never);
+    await service.reviewLeaveRequest(
+      'company-id',
+      'leave-request-id',
+      'actor-id',
+      { status: LeaveRequestStatusDto.REJECTED },
+    );
+    expect(prisma.leaveBalance.update).not.toHaveBeenCalled();
+
+    prisma.leaveRequest.findFirst.mockResolvedValueOnce({
+      id: 'leave-request-id',
+      status: 'REJECTED',
+    });
+    await expect(
+      service.reviewLeaveRequest(
+        'company-id',
+        'leave-request-id',
+        'actor-id',
+        { status: LeaveRequestStatusDto.APPROVED },
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('cancels a pending self-service request without changing a balance', async () => {
+    prisma.leaveRequest.findFirst.mockResolvedValue({
+      id: 'leave-request-id',
+      companyId: 'company-id',
+      employeeId: 'employee-id',
+      leaveTypeId: 'leave-type-id',
+      days: 2,
+      status: 'PENDING',
+      fromDate: new Date('2099-06-15T00:00:00.000Z'),
+    });
+    prisma.leaveRequest.update.mockResolvedValue({
+      id: 'leave-request-id',
+      status: 'CANCELLED',
+    });
+    const service = new AttendanceLeaveService(prisma as never);
+
+    const result = await service.cancelLeaveRequest(
+      'company-id',
+      'leave-request-id',
+      'actor-id',
+      'employee-id',
+      false,
+    );
+
+    expect(result.status).toBe('CANCELLED');
+    expect(prisma.leaveBalance.update).not.toHaveBeenCalled();
+  });
+
+  it('prevents another employee and foreign company from cancelling a request', async () => {
+    prisma.leaveRequest.findFirst.mockResolvedValueOnce({
+      id: 'leave-request-id',
+      companyId: 'company-id',
+      employeeId: 'other-employee-id',
+      status: 'PENDING',
+      fromDate: new Date('2099-06-15T00:00:00.000Z'),
+    });
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await expect(
+      service.cancelLeaveRequest(
+        'company-id',
+        'leave-request-id',
+        'actor-id',
+        'employee-id',
+        false,
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    prisma.leaveRequest.findFirst.mockResolvedValueOnce(null);
+    await expect(
+      service.cancelLeaveRequest(
+        'company-id',
+        'foreign-request-id',
+        'actor-id',
+        'employee-id',
+        true,
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.leaveRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('restores balance transactionally when future approved leave is cancelled', async () => {
+    prisma.leaveRequest.findFirst.mockResolvedValue({
+      id: 'leave-request-id',
+      companyId: 'company-id',
+      employeeId: 'employee-id',
+      leaveTypeId: 'leave-type-id',
+      days: 2,
+      status: 'APPROVED',
+      fromDate: new Date('2099-06-15T00:00:00.000Z'),
+    });
+    prisma.leaveBalance.findFirst.mockResolvedValue({
+      id: 'balance-id',
+      used: 5,
+      remaining: 7,
+    });
+    prisma.leaveBalance.update.mockResolvedValue({ id: 'balance-id' });
+    prisma.leaveRequest.update.mockResolvedValue({
+      id: 'leave-request-id',
+      status: 'CANCELLED',
+    });
+    const service = new AttendanceLeaveService(prisma as never);
+
+    await service.cancelLeaveRequest(
+      'company-id',
+      'leave-request-id',
+      'actor-id',
+      'employee-id',
+      false,
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.leaveBalance.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ used: 3, remaining: 9 }),
+      }),
+    );
+  });
+
+  it('rejects cancellation of rejected, cancelled, or already-started approved leave', async () => {
+    const service = new AttendanceLeaveService(prisma as never);
+    for (const request of [
+      { status: 'REJECTED', fromDate: new Date('2099-06-15') },
+      { status: 'CANCELLED', fromDate: new Date('2099-06-15') },
+      { status: 'APPROVED', fromDate: new Date('2020-06-15') },
+    ]) {
+      prisma.leaveRequest.findFirst.mockResolvedValueOnce({
+        id: 'leave-request-id',
+        companyId: 'company-id',
+        employeeId: 'employee-id',
+        leaveTypeId: 'leave-type-id',
+        days: 2,
+        ...request,
+      });
+      await expect(
+        service.cancelLeaveRequest(
+          'company-id',
+          'leave-request-id',
+          'actor-id',
+          'employee-id',
+          false,
+        ),
+      ).rejects.toBeInstanceOf(ConflictException);
+    }
+    expect(prisma.leaveRequest.update).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate holidays by company, date, and name', async () => {

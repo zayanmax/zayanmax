@@ -128,6 +128,28 @@ async function main() {
     });
   }
 
+  const automatedLeaveTypes = await prisma.leaveType.findMany({
+    where: { companyId, name: { startsWith: 'Annual Leave ' } },
+    select: { id: true, name: true, code: true },
+  });
+  const automatedLeaveTypeIds = automatedLeaveTypes
+    .filter(
+      (leaveType) =>
+        /^Annual Leave \d+$/.test(leaveType.name) && /^AL\d+$/.test(leaveType.code),
+    )
+    .map((leaveType) => leaveType.id);
+  if (automatedLeaveTypeIds.length > 0) {
+    await prisma.leaveRequest.deleteMany({
+      where: { companyId, leaveTypeId: { in: automatedLeaveTypeIds } },
+    });
+    await prisma.leaveBalance.deleteMany({
+      where: { companyId, leaveTypeId: { in: automatedLeaveTypeIds } },
+    });
+    await prisma.leaveType.deleteMany({
+      where: { companyId, id: { in: automatedLeaveTypeIds } },
+    });
+  }
+
   const branchData = [
     ['Bengaluru HQ', 'Indiranagar, Bengaluru, Karnataka', '+91 80 4123 8800'],
     [
@@ -562,6 +584,133 @@ async function main() {
         reviewComment: item.reviewComment ?? undefined,
         createdById: admin.id,
         updatedById: item.status === 'PENDING' ? undefined : admin.id,
+      },
+    });
+  }
+
+  const leaveTypeData = [
+    ['Casual Leave', 'CL', 12, true, true],
+    ['Sick Leave', 'SL', 10, true, true],
+    ['Earned Leave', 'EL', 18, true, true],
+    ['Unpaid Leave', 'UL', 0, true, false],
+  ] as const;
+  for (const [name, code, annualAllowance, requiresApproval, paid] of leaveTypeData) {
+    await prisma.leaveType.upsert({
+      where: { companyId_code: { companyId, code } },
+      update: {
+        name,
+        annualAllowance,
+        requiresApproval,
+        paid,
+        status: 'ACTIVE',
+        deletedAt: null,
+        updatedById: admin.id,
+      },
+      create: {
+        id: stableId('leave-type', code),
+        companyId,
+        name,
+        code,
+        annualAllowance,
+        requiresApproval,
+        paid,
+        createdById: admin.id,
+      },
+    });
+  }
+
+  const leaveRequestData = [
+    { key: 'casual-family-event', employee: employees[0], type: 'CL', from: 7, to: 8, status: 'PENDING' as const, reason: 'Family ceremony outside Bengaluru.', reviewComment: null },
+    { key: 'sick-medical-review', employee: employees[1], type: 'SL', from: 12, to: 12, status: 'PENDING' as const, reason: 'Scheduled medical review appointment.', reviewComment: null },
+    { key: 'earned-travel', employee: employees[2], type: 'EL', from: 20, to: 22, status: 'APPROVED' as const, reason: 'Planned personal travel with delivery coverage arranged.', reviewComment: 'Approved after confirming sprint handover.' },
+    { key: 'casual-school-event', employee: employees[3], type: 'CL', from: 15, to: 15, status: 'APPROVED' as const, reason: 'Attend a child school event.', reviewComment: 'Approved with team coverage confirmed.' },
+    { key: 'sick-recovery', employee: employees[4], type: 'SL', from: 9, to: 9, status: 'REJECTED' as const, reason: 'Recovery day following a routine procedure.', reviewComment: 'Please resubmit with the corrected appointment date.' },
+    { key: 'casual-cancelled-trip', employee: employees[5], type: 'CL', from: 18, to: 19, status: 'CANCELLED' as const, reason: 'Personal trip that was later cancelled.', reviewComment: null },
+    { key: 'unpaid-course', employee: employees[6], type: 'UL', from: 25, to: 25, status: 'APPROVED' as const, reason: 'Professional certification examination.', reviewComment: 'Approved as unpaid leave.' },
+    { key: 'earned-home-move', employee: employees[7], type: 'EL', from: 28, to: 29, status: 'REJECTED' as const, reason: 'House move and utility handover.', reviewComment: 'Delivery milestone requires revised dates.' },
+    { key: 'sick-recent-recovery', employee: employees[8], type: 'SL', from: -5, to: -4, status: 'APPROVED' as const, reason: 'Doctor-advised recovery after a seasonal illness.', reviewComment: 'Approved against the submitted medical note.' },
+  ];
+
+  const approvedUsage = new Map<string, number>();
+  for (const request of leaveRequestData) {
+    if (request.status === 'APPROVED' && request.type !== 'UL') {
+      const usageKey = `${request.employee.id}:${request.type}`;
+      approvedUsage.set(usageKey, request.to - request.from + 1);
+    }
+  }
+
+  const leaveYear = referenceDate.getFullYear();
+  for (let employeeIndex = 0; employeeIndex < employees.length; employeeIndex += 1) {
+    const employee = employees[employeeIndex];
+    for (const [, code, annualAllowance] of leaveTypeData) {
+      const accrued = code === 'UL' ? 0 : employeeIndex % 3;
+      const openingBalance = Number(annualAllowance);
+      const used = approvedUsage.get(`${employee.id}:${code}`) ?? 0;
+      await prisma.leaveBalance.upsert({
+        where: {
+          companyId_employeeId_leaveTypeId_year: {
+            companyId,
+            employeeId: employee.id,
+            leaveTypeId: stableId('leave-type', code),
+            year: leaveYear,
+          },
+        },
+        update: {
+          openingBalance,
+          accrued,
+          used,
+          remaining: openingBalance + accrued - used,
+          updatedById: admin.id,
+        },
+        create: {
+          id: stableId('leave-balance', `${employee.employeeCode}:${code}:${leaveYear}`),
+          companyId,
+          employeeId: employee.id,
+          leaveTypeId: stableId('leave-type', code),
+          year: leaveYear,
+          openingBalance,
+          accrued,
+          used,
+          remaining: openingBalance + accrued - used,
+          createdById: admin.id,
+        },
+      });
+    }
+  }
+
+  for (const request of leaveRequestData) {
+    const days = request.to - request.from + 1;
+    await prisma.leaveRequest.upsert({
+      where: { id: stableId('leave-request', request.key) },
+      update: {
+        employeeId: request.employee.id,
+        leaveTypeId: stableId('leave-type', request.type),
+        fromDate: day(request.from, 12),
+        toDate: day(request.to, 12),
+        days,
+        reason: request.reason,
+        status: request.status,
+        reviewedById: request.status === 'PENDING' || request.status === 'CANCELLED' ? null : admin.id,
+        reviewedAt: request.status === 'PENDING' || request.status === 'CANCELLED' ? null : day(-1, 15),
+        reviewComment: request.reviewComment,
+        deletedAt: null,
+        updatedById: admin.id,
+      },
+      create: {
+        id: stableId('leave-request', request.key),
+        companyId,
+        employeeId: request.employee.id,
+        leaveTypeId: stableId('leave-type', request.type),
+        fromDate: day(request.from, 12),
+        toDate: day(request.to, 12),
+        days,
+        reason: request.reason,
+        status: request.status,
+        reviewedById: request.status === 'PENDING' || request.status === 'CANCELLED' ? undefined : admin.id,
+        reviewedAt: request.status === 'PENDING' || request.status === 'CANCELLED' ? undefined : day(-1, 15),
+        reviewComment: request.reviewComment ?? undefined,
+        createdById: admin.id,
+        updatedById: request.status === 'PENDING' ? undefined : admin.id,
       },
     });
   }
@@ -1727,6 +1876,9 @@ async function main() {
       where: { companyId },
     }),
     holidays: await prisma.holiday.count({ where: { companyId, deletedAt: null } }),
+    leaveTypes: await prisma.leaveType.count({ where: { companyId, deletedAt: null } }),
+    leaveBalances: await prisma.leaveBalance.count({ where: { companyId, year: referenceDate.getFullYear() } }),
+    leaveRequests: await prisma.leaveRequest.count({ where: { companyId, deletedAt: null } }),
     clients: await prisma.client.count({
       where: { companyId, deletedAt: null },
     }),

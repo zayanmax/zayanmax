@@ -3,7 +3,7 @@
 **Audit date:** 30 August 2026
 **Repository:** `C:\Users\naveenxd\Desktop\ZayanMax`
 **Scope:** Attendance, Leave, Payroll, Performance, and Recruitment
-**Current outcome:** Attendance is API-backed and complete within the documented v1 scope. Leave, Payroll, Performance, and Recruitment remain audited presenter modules and were not changed in the Attendance implementation.
+**Current outcome:** Attendance and Leave are API-backed and complete within their documented v1 scopes. Payroll, Performance, and Recruitment remain audited presenter modules.
 
 ## 1. Purpose
 
@@ -12,12 +12,12 @@ This file is the implementation handoff for replacing the five presenter-data pa
 | Module | Route | Current frontend | Navigation permission |
 | --- | --- | --- | --- |
 | Attendance | `/attendance` | Real API-backed Attendance workspace | `attendance.view` |
-| Leave | `/leave` | `DemoModulePage module="leave"` | `leaves.view` |
+| Leave | `/leave` | Real API-backed Leave workspace | `leaves.view` |
 | Payroll | `/payroll` | `DemoModulePage module="payroll"` | `payroll.view` |
 | Performance | `/performance` | `DemoModulePage module="performance"` | `performance.view` |
 | Recruitment | `/recruitment` | `DemoModulePage module="recruitment"` | `recruitment.view` |
 
-The remaining presenter pages must stay available until each replacement passes its module-specific definition of done. Attendance passed that gate on 30 August 2026; its route was switched and only its presenter configuration was removed.
+The remaining presenter pages must stay available until each replacement passes its module-specific definition of done. Attendance and Leave passed that gate on 30 August 2026; each route was switched and only its own presenter configuration was removed.
 
 ## 2. Verified baseline
 
@@ -193,9 +193,9 @@ The attendance/leave service spec now covers the existing shift, duplicate-recor
 
 ## 6. Leave
 
-### 6.1 Readiness assessment
+### 6.1 Completion status
 
-Leave requests and approvals can support an initial list/create/review UI. Balance visibility and cancellation are contract gaps, so the current API cannot yet support a complete employee leave experience.
+Leave is complete for the agreed v1 scope. The backend owns day calculation and balance integrity, company references are tenant-validated, employees are limited to their own requests and balances, approvers can manage company records, and approval/cancellation balance changes are transactional. `/leave` now uses the typed API-backed feature rather than presenter data.
 
 ### 6.2 Endpoints
 
@@ -203,10 +203,12 @@ Leave requests and approvals can support an initial list/create/review UI. Balan
 | --- | --- | --- | --- |
 | GET | `/leaves/types` | `leaves.view` | Company leave types |
 | POST | `/leaves/types` | `leaves.approve` | Name/code plus allowance, approval, and paid flags |
-| POST | `/leaves/balances` | `leaves.approve` | Upsert employee/type/year balances and usage values |
+| GET | `/leaves/balances` | `leaves.view` | Paginated company or self-scoped balances; employee/type/year filters |
+| POST | `/leaves/balances` | `leaves.approve` | Validated employee/type/year balance upsert with authoritative remaining value |
 | GET | `/leaves/requests` | `leaves.view` | Paginated requests; filters include employee, leave type, status, and date range |
-| POST | `/leaves/requests` | `leaves.request` | Employee, leave type, from/to dates, days, and optional reason |
+| POST | `/leaves/requests` | `leaves.request` | Employee, leave type, from/to dates, and optional reason; server calculates inclusive days |
 | PATCH | `/leaves/requests/:id/review` | `leaves.approve` | `APPROVED` or `REJECTED` with optional review comment |
+| PATCH | `/leaves/requests/:id/cancel` | `leaves.request` | Cancel eligible pending/future-approved leave; approved balance use is rolled back transactionally |
 
 Request statuses are `PENDING`, `APPROVED`, `REJECTED`, and `CANCELLED`.
 
@@ -216,33 +218,32 @@ Request statuses are `PENDING`, `APPROVED`, `REJECTED`, and `CANCELLED`.
 - `LeaveBalance`
 - `LeaveRequest`
 
-### 6.4 Missing frontend flows
+### 6.4 Delivered frontend flows
 
-- Request list with employee/type/status/date filters.
-- Employee-friendly create form using real employee and leave-type options.
-- Approval/rejection queue with a confirmation and optional review comment.
-- Leave-type and balance administration for `leaves.approve` users.
-- Balance cards and entitlement context before submission.
-- Employee cancellation of an eligible request.
-- Request detail/history if review metadata must be presented outside the table.
+- Permission-aware request list with employee, leave type, status, and date filters.
+- Request form using real employee and leave-type records, server-compatible date validation, day preview, and balance context.
+- Approver queue with consequential confirmation for approve/reject actions.
+- Company balance list and administration, plus employee self-service balance visibility.
+- Leave-type policy list and creation for `leaves.approve` users.
+- Eligible cancellation controls with explicit approved-balance rollback messaging.
+- Loading, error, empty, pagination, status-badge, validation, and cache-invalidation states.
 
-### 6.5 Backend gaps and severity
+### 6.5 Backend invariants
 
-| Severity | Gap | Required resolution |
-| --- | --- | --- |
-| Blocker for complete employee UI | No GET leave-balance endpoint | Add company/employee/year-filtered balance reads |
-| Blocker for cancellation UI | `CANCELLED` exists but no cancellation endpoint exists | Add an authorized cancel action with legal-state rules and balance rollback semantics |
-| Blocker for safe writes | Employee and leave-type references are not consistently company-validated | Add tenant-scoped lookups and regression tests |
-| Blocker for correct balances | Date ordering, requested-day calculation, sufficient balance, and non-negative decrement are not fully enforced | Make the service authoritative for days and balance constraints |
-| Important | No request detail, leave-type update, or balance history endpoint | Scope v1 accordingly or add contracts before those screens |
+- Requested days are inclusive calendar days calculated by the server; client-supplied `days` is ignored and no longer required.
+- Reversed ranges, cross-year ranges, and overlap with pending/approved requests are rejected.
+- Normal employees can create, read, and cancel only their own records; approvers can act across employees inside the authenticated company.
+- Employee and leave-type references must exist, be active where applicable, and belong to the authenticated company.
+- `remaining = openingBalance + accrued - used`; negative or overused administrative values are rejected.
+- Approval of a balance-consuming leave type requires sufficient matching balance and updates request plus balance in one database transaction.
+- Pending requests can be cancelled. Approved requests can be cancelled only before their UTC start date, with transactional balance restoration. Rejected, cancelled, or started approved requests are terminal for cancellation.
 
-### 6.6 Implementation order
+### 6.6 Deliberate v1 limits
 
-1. Add balance read, cancellation, tenant-reference validation, and balance/date tests.
-2. Build typed API/hooks for types, balances, requests, create, review, and cancel.
-3. Build role-aware employee and approver views from the same feature contracts.
-4. Verify real state changes and cache invalidation.
-5. Switch `/leave`; then remove only the Leave presenter configuration.
+- Day calculation uses inclusive calendar days because half-days, work schedules, and workforce calendars are not modeled in the current leave contract.
+- Cross-year requests must be split so each request maps to one balance year.
+- No request-detail route, leave-type edit/delete, accrual history, carry-forward automation, attachment workflow, delegated approver chain, or attendance/calendar synchronization is claimed.
+- `requiresApproval` remains policy metadata; requests enter `PENDING` in this v1 workflow.
 
 ## 7. Payroll
 
@@ -463,7 +464,7 @@ The recruitment spec covers duplicate candidates, core create/status flows, inte
 Recommended sequence:
 
 1. **Attendance** — completed on 30 August 2026; keep it as the reference implementation for the remaining modules.
-2. **Leave** — add balance reads/cancellation and enforce balance invariants.
+2. **Leave** — completed on 30 August 2026; API-backed requests, approvals, balances, types, and cancellation are live within the documented v1 scope.
 3. **Payroll** — complete financial transaction and calculation hardening before UI activation.
 4. **Performance** — establish secondary read contracts and workflow transitions.
 5. **Recruitment** — complete conversion transactionality and full pipeline read contracts.
@@ -495,4 +496,4 @@ A People & HR module is complete only when:
 - backend and frontend tests/checks pass from a known baseline;
 - the route replacement and matching demo-config removal happen last and together.
 
-**Next implementation prompt:** Select exactly one of Leave, Payroll, Performance, or Recruitment and complete its backend safety gates before replacing its presenter route. Attendance requires no remaining implementation work inside its documented v1 scope.
+**Next implementation prompt:** Select exactly one of Payroll, Performance, or Recruitment and complete its backend safety gates before replacing its presenter route. Attendance and Leave require no remaining implementation work inside their documented v1 scopes.
