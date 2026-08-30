@@ -28,4 +28,29 @@ describe('validateEnv', () => {
       }),
     ).toThrow('Environment validation failed');
   });
+
+  it('rejects weak or reused JWT secrets in production', () => {
+    const productionConfig = {
+      NODE_ENV: 'production',
+      PORT: '4100',
+      DATABASE_URL: 'postgresql://database.internal:5432/zayan_max',
+      REDIS_URL: 'redis://redis.internal:6379',
+      JWT_ACCESS_SECRET: 'short-access-secret',
+      JWT_REFRESH_SECRET: 'short-refresh-secret',
+      CORS_ORIGINS: 'https://app.zayanmax.com',
+    };
+
+    expect(() => validateEnv(productionConfig)).toThrow(
+      'JWT_ACCESS_SECRET must be at least 32 characters in production',
+    );
+
+    const sharedSecret = 'a-secure-but-reused-secret-value-1234567890';
+    expect(() =>
+      validateEnv({
+        ...productionConfig,
+        JWT_ACCESS_SECRET: sharedSecret,
+        JWT_REFRESH_SECRET: sharedSecret,
+      }),
+    ).toThrow('JWT access and refresh secrets must be different');
+  });
 });

@@ -7,18 +7,22 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "build:railway": "npm run prisma:generate && npm run build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "ts-node prisma/seed.ts",
-    "prisma:seed:demo": "ts-node prisma/demo-seed.ts",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:bootstrap": "ts-node prisma/bootstrap.ts",
+    "prisma:seed": "ts-node prisma/run-development-seed.ts",
+    "prisma:seed:dev": "ts-node prisma/run-development-seed.ts",
+    "prisma:seed:demo": "ts-node prisma/run-demo-seed.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -94,7 +98,7 @@
     "testEnvironment": "node"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/run-development-seed.ts"
   },
   "overrides": {
     "multer": "2.2.0"

@@ -54,6 +54,10 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   CORS_ORIGINS?: string;
+
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  SWAGGER_ENABLED?: 'true' | 'false';
 }
 
 export function validateEnv(config: Record<string, unknown>) {
@@ -68,5 +72,36 @@ export function validateEnv(config: Record<string, unknown>) {
     throw new Error(`Environment validation failed: ${errors.toString()}`);
   }
 
+  if (validatedConfig.NODE_ENV === 'production') {
+    assertProductionSecret(
+      'JWT_ACCESS_SECRET',
+      validatedConfig.JWT_ACCESS_SECRET,
+    );
+    assertProductionSecret(
+      'JWT_REFRESH_SECRET',
+      validatedConfig.JWT_REFRESH_SECRET,
+    );
+    if (
+      validatedConfig.JWT_ACCESS_SECRET === validatedConfig.JWT_REFRESH_SECRET
+    ) {
+      throw new Error('JWT access and refresh secrets must be different');
+    }
+  }
+
   return validatedConfig;
+}
+
+function assertProductionSecret(name: string, value: string) {
+  if (value.length < 32) {
+    throw new Error(`${name} must be at least 32 characters in production`);
+  }
+
+  const normalized = value.toLowerCase();
+  if (
+    normalized.includes('change_me') ||
+    normalized.includes('changeme') ||
+    normalized.includes('zayanmax-secret')
+  ) {
+    throw new Error(`${name} uses a known development placeholder`);
+  }
 }

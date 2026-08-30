@@ -128,6 +128,20 @@ npm run lint
 npm run build
 ```
 
+## Railway deployment
+
+Railway deployment uses the project-level Infrastructure-as-Code definition in
+[`/.railway/railway.ts`](./.railway/railway.ts) with four resources: frontend,
+backend, managed PostgreSQL, and managed Redis. Legacy `railway.json` and
+`railway.toml` Config-as-Code files are not used.
+
+- [Railway deployment guide](./docs/RAILWAY_DEPLOYMENT.md)
+- [Railway variable matrix](./docs/RAILWAY_VARIABLES.md)
+- [Railway readiness report](./RAILWAY_READINESS.md)
+
+The repository is prepared locally only. Linking, planning, applying, pushing,
+and deploying require a separate authorized operation.
+
 ## Current status
 
 ZayanMax has broad backend coverage and working frontend flows through Calendar and resource booking. The next planned frontend area is Helpdesk.
