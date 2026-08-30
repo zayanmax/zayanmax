@@ -22,7 +22,7 @@ therefore uses `apps/backend` and `apps/frontend` as source root directories.
 
 ## Prerequisites
 
-- GitHub repository `Naveen4703/zayanmax` with the intended commit pushed in a
+- GitHub repository `zayanmax/zayanmax` with the intended commit pushed in a
   separately authorized task.
 - Access to the intended Railway project and its Demo/Staging and Production
   environments.
@@ -83,7 +83,7 @@ readiness but is not yet used by a queue, cache, scheduler, or worker.
 | Setting | Value |
 | --- | --- |
 | Service | `zayanmax-backend` |
-| GitHub source | `Naveen4703/zayanmax`, branch `main` |
+| GitHub source | `zayanmax/zayanmax`, branch `main` |
 | Root Directory | `apps/backend` |
 | Builder | Railpack |
 | Build Command | `npm run build:railway` |
@@ -107,7 +107,7 @@ existing request-body parser defaults remain active.
 | Setting | Value |
 | --- | --- |
 | Service | `zayanmax-frontend` |
-| GitHub source | `Naveen4703/zayanmax`, branch `main` |
+| GitHub source | `zayanmax/zayanmax`, branch `main` |
 | Root Directory | `apps/frontend` |
 | Builder | Railpack |
 | Build Command | `npm run build` |

@@ -12,7 +12,7 @@ export default defineRailway((ctx) => {
   const cache = redis('Redis');
 
   const backend = service('zayanmax-backend', {
-    source: github('Naveen4703/zayanmax', {
+    source: github('zayanmax/zayanmax', {
       branch: 'main',
       rootDirectory: 'apps/backend',
     }),
@@ -38,7 +38,7 @@ export default defineRailway((ctx) => {
   });
 
   const frontend = service('zayanmax-frontend', {
-    source: github('Naveen4703/zayanmax', {
+    source: github('zayanmax/zayanmax', {
       branch: 'main',
       rootDirectory: 'apps/frontend',
     }),

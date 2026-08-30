@@ -52,7 +52,7 @@ apps/
   frontend/    Runnable Next.js application
 ```
 
-The runnable applications are under `apps/`. Architecture notes, API references, implementation plans, prompts, status reports, and handover material are maintained separately on the [documentation branch](https://github.com/Naveen4703/zayanmax/tree/docs).
+The runnable applications are under `apps/`. Architecture notes, API references, implementation plans, prompts, status reports, and handover material are maintained separately on the [documentation branch](https://github.com/zayanmax/zayanmax/tree/docs).
 
 ## Run locally
 
@@ -65,7 +65,7 @@ The runnable applications are under `apps/`. Architecture notes, API references,
 ### 1. Clone the repository
 
 ```powershell
-git clone https://github.com/Naveen4703/zayanmax.git
+git clone https://github.com/zayanmax/zayanmax.git
 Set-Location zayanmax
 ```
 
@@ -156,17 +156,17 @@ The following infrastructure is not complete:
 - Invoice and quotation PDF generation
 - Production deployment configuration and operational monitoring
 
-See [current status](https://github.com/Naveen4703/zayanmax/blob/docs/docs/status/current-status.md) and [next-session handover](https://github.com/Naveen4703/zayanmax/blob/docs/docs/handover/next-session.md) for detailed implementation notes.
+See [current status](https://github.com/zayanmax/zayanmax/blob/docs/docs/status/current-status.md) and [next-session handover](https://github.com/zayanmax/zayanmax/blob/docs/docs/handover/next-session.md) for detailed implementation notes.
 
 ## Documentation
 
-- [Documentation index](https://github.com/Naveen4703/zayanmax/tree/docs)
-- [System architecture](https://github.com/Naveen4703/zayanmax/blob/docs/architecture/system-architecture.md)
-- [System design](https://github.com/Naveen4703/zayanmax/blob/docs/architecture/system-design.md)
-- [API contract](https://github.com/Naveen4703/zayanmax/blob/docs/docs/api/api-contract.md)
-- [Swagger and OpenAPI](https://github.com/Naveen4703/zayanmax/blob/docs/docs/api/swagger-openapi.md)
-- [Authentication and permissions](https://github.com/Naveen4703/zayanmax/blob/docs/docs/security/auth-rbac.md)
-- [Backend platform hardening](https://github.com/Naveen4703/zayanmax/blob/docs/docs/backend/platform-hardening.md)
+- [Documentation index](https://github.com/zayanmax/zayanmax/tree/docs)
+- [System architecture](https://github.com/zayanmax/zayanmax/blob/docs/architecture/system-architecture.md)
+- [System design](https://github.com/zayanmax/zayanmax/blob/docs/architecture/system-design.md)
+- [API contract](https://github.com/zayanmax/zayanmax/blob/docs/docs/api/api-contract.md)
+- [Swagger and OpenAPI](https://github.com/zayanmax/zayanmax/blob/docs/docs/api/swagger-openapi.md)
+- [Authentication and permissions](https://github.com/zayanmax/zayanmax/blob/docs/docs/security/auth-rbac.md)
+- [Backend platform hardening](https://github.com/zayanmax/zayanmax/blob/docs/docs/backend/platform-hardening.md)
 
 ## Project note
 
