@@ -1,4 +1,4 @@
-import type { TaskPayload } from "@/features/tasks/types";
+import type { TaskAssignee, TaskPayload } from "@/features/tasks/types";
 import type { TaskFormValues, SubtaskFormValues } from "@/features/tasks/schemas";
 
 export function formatTaskDate(value?: string | null) {
@@ -44,8 +44,13 @@ export function toSubtaskPayload(values: SubtaskFormValues) {
   };
 }
 
-export function assigneeLabel(employeeId?: string | null, userId?: string | null) {
-  if (employeeId) return `Employee ${employeeId.slice(0, 8)}`;
-  if (userId) return `User ${userId.slice(0, 8)}`;
+export function assigneeLabel(assignee: TaskAssignee) {
+  if (assignee.employee) {
+    const fullName = `${assignee.employee.firstName} ${assignee.employee.lastName}`.trim();
+    return fullName || assignee.employee.email;
+  }
+  if (assignee.user?.email) return assignee.user.email;
+  if (assignee.employeeId) return "Assigned employee";
+  if (assignee.userId) return "Assigned user";
   return "Unassigned";
 }

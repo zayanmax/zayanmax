@@ -1,1 +1,4 @@
 .worktrees/
+.demo-patch-backup/
+.playwright-cli/
+/output/

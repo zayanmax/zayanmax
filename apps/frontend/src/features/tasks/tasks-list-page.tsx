@@ -1,13 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { Edit, Eye, LayoutGrid, Plus, Trash2 } from "lucide-react";
+import {
+  CalendarDays,
+  CircleDot,
+  Edit,
+  Eye,
+  Flag,
+  FolderKanban,
+  LayoutGrid,
+  Plus,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable, type DataTableColumn } from "@/components/data/data-table";
 import { PaginationControls } from "@/components/data/pagination-controls";
 import { SearchFilterBar } from "@/components/data/search-filter-bar";
 import { SelectField } from "@/components/forms/select-field";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ErrorState } from "@/components/shared/error-state";
 import { LoadingState } from "@/components/shared/loading-state";
@@ -74,6 +86,7 @@ export function TasksListPage() {
     {
       key: "title",
       header: "Task",
+      className: "min-w-56",
       render: (task) => (
         <Link
           href={`/tasks/${task.id}`}
@@ -83,7 +96,12 @@ export function TasksListPage() {
         </Link>
       ),
     },
-    { key: "project", header: "Project", render: (task) => task.project?.name ?? "-" },
+    {
+      key: "project",
+      header: "Project",
+      className: "min-w-52 text-muted-foreground",
+      render: (task) => task.project?.name ?? "—",
+    },
     {
       key: "status",
       header: "Status",
@@ -93,36 +111,70 @@ export function TasksListPage() {
     {
       key: "assignees",
       header: "Assignees",
+      className: "min-w-48",
       render: (task) =>
-        task.assignees?.length
-          ? task.assignees.map((assignee) => assigneeLabel(assignee.employeeId, assignee.userId)).join(", ")
-          : "-",
+        task.assignees?.length ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {task.assignees.slice(0, 2).map((assignee) => (
+              <span
+                key={assignee.id}
+                className="inline-flex max-w-44 items-center gap-1.5 rounded-full bg-muted px-2 py-1 text-xs font-medium text-foreground"
+              >
+                <UserRound className="size-3.5 shrink-0 text-muted-foreground" />
+                <span className="truncate">{assigneeLabel(assignee)}</span>
+              </span>
+            ))}
+            {task.assignees.length > 2 ? (
+              <span className="text-xs text-muted-foreground">+{task.assignees.length - 2}</span>
+            ) : null}
+          </div>
+        ) : (
+          <span className="text-sm text-muted-foreground">Unassigned</span>
+        ),
     },
-    { key: "dueDate", header: "Due", render: (task) => formatTaskDate(task.dueDate) },
+    {
+      key: "dueDate",
+      header: "Due",
+      className: "min-w-36",
+      render: (task) => (
+        <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+          <CalendarDays className="size-3.5" />
+          {formatTaskDate(task.dueDate)}
+        </span>
+      ),
+    },
     {
       key: "parent",
       header: "Type",
-      render: (task) => (task.parentTaskId ? "Subtask" : `${task._count?.subtasks ?? 0} subtasks`),
+      render: (task) => (
+        <Badge variant="secondary">
+          {task.parentTaskId ? "Subtask" : `${task._count?.subtasks ?? 0} subtasks`}
+        </Badge>
+      ),
     },
     {
       key: "actions",
       header: "Actions",
       render: (task) => (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-1">
           <Link
             href={`/tasks/${task.id}`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
+            aria-label={`View ${task.title}`}
+            title="View task"
+            className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
           >
             <Eye className="size-4" />
-            View
+            <span className="sr-only">View</span>
           </Link>
           <PermissionGuard permission="tasks.update">
             <Link
               href={`/tasks/${task.id}/edit`}
-              className={buttonVariants({ variant: "outline", size: "sm" })}
+              aria-label={`Edit ${task.title}`}
+              title="Edit task"
+              className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
             >
               <Edit className="size-4" />
-              Edit
+              <span className="sr-only">Edit</span>
             </Link>
           </PermissionGuard>
           <PermissionGuard permission="tasks.delete">
@@ -133,9 +185,15 @@ export function TasksListPage() {
               destructive
               onConfirm={() => void deleteMutation.mutateAsync(task.id)}
               trigger={
-                <Button type="button" variant="destructive" size="sm">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon-sm"
+                  aria-label={`Delete ${task.title}`}
+                  title="Delete task"
+                >
                   <Trash2 className="size-4" />
-                  Delete
+                  <span className="sr-only">Delete</span>
                 </Button>
               }
             />
@@ -198,6 +256,7 @@ export function TasksListPage() {
           filters={
             <>
               <SelectField
+                icon={CircleDot}
                 value={status}
                 onValueChange={(value) => {
                   setStatus(value);
@@ -207,6 +266,7 @@ export function TasksListPage() {
                 options={statusOptions}
               />
               <SelectField
+                icon={Flag}
                 value={priority}
                 onValueChange={(value) => {
                   setPriority(value);
@@ -216,6 +276,7 @@ export function TasksListPage() {
                 options={priorityOptions}
               />
               <SelectField
+                icon={FolderKanban}
                 value={projectId}
                 onValueChange={(value) => {
                   setProjectId(value);

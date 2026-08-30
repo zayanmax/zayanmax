@@ -1,5 +1,6 @@
 import type { ApiMeta } from "@/types/api";
 import type { Project } from "@/features/projects/types";
+import type { Employee } from "@/features/employees/types";
 
 export type TaskStatus =
   | "TODO"
@@ -27,6 +28,8 @@ export type TaskAssignee = {
   createdAt?: string;
   updatedAt?: string;
   deletedAt?: string | null;
+  employee?: Pick<Employee, "id" | "firstName" | "lastName" | "email"> | null;
+  user?: { id: string; email: string } | null;
 };
 
 export type TaskComment = {

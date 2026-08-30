@@ -16,7 +16,6 @@ import {
   FileText,
   FolderTree,
   HelpCircle,
-  KanbanSquare,
   Library,
   LayoutDashboard,
   Megaphone,
@@ -46,12 +45,14 @@ export type NavItem = {
 
 export type NavGroup = {
   label: string;
+  icon: LucideIcon;
   items: NavItem[];
 };
 
 export const navigationGroups: NavGroup[] = [
   {
     label: "Workspace",
+    icon: LayoutDashboard,
     items: [
       {
         label: "Dashboard",
@@ -62,9 +63,51 @@ export const navigationGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Operations",
+    label: "People & HR",
+    icon: Users,
     items: [
-      { label: "Employees", href: "/employees", icon: Users, permission: "employees.view" },
+      {
+        label: "Employees",
+        href: "/employees",
+        icon: Users,
+        permission: "employees.view",
+      },
+      {
+        label: "Attendance",
+        href: "/attendance",
+        icon: Timer,
+        permission: "attendance.view",
+      },
+      {
+        label: "Leave",
+        href: "/leave",
+        icon: CalendarDays,
+        permission: "leaves.view",
+      },
+      {
+        label: "Payroll",
+        href: "/payroll",
+        icon: WalletCards,
+        permission: "payroll.view",
+      },
+      {
+        label: "Performance",
+        href: "/performance",
+        icon: Target,
+        permission: "performance.view",
+      },
+      {
+        label: "Recruitment",
+        href: "/recruitment",
+        icon: BriefcaseBusiness,
+        permission: "recruitment.view",
+      },
+    ],
+  },
+  {
+    label: "CRM & Delivery",
+    icon: BriefcaseBusiness,
+    items: [
       {
         label: "Clients & CRM",
         href: "/clients",
@@ -83,12 +126,6 @@ export const navigationGroups: NavGroup[] = [
         icon: SquareCheckBig,
         permission: "tasks.view",
       },
-      {
-        label: "Kanban",
-        href: "/tasks/kanban",
-        icon: KanbanSquare,
-        permission: "tasks.view",
-      },
       { label: "Leads", href: "/sales/leads", icon: Target, permission: "sales.view" },
       {
         label: "Opportunities",
@@ -102,6 +139,12 @@ export const navigationGroups: NavGroup[] = [
         icon: FileCheck2,
         permission: "sales.view",
       },
+    ],
+  },
+  {
+    label: "Finance & Billing",
+    icon: WalletCards,
+    items: [
       {
         label: "Billing Overview",
         href: "/billing",
@@ -168,6 +211,12 @@ export const navigationGroups: NavGroup[] = [
         icon: WalletCards,
         permission: "finance.view",
       },
+    ],
+  },
+  {
+    label: "Procurement & Assets",
+    icon: Package,
+    items: [
       {
         label: "Purchase Overview",
         href: "/purchase",
@@ -246,6 +295,12 @@ export const navigationGroups: NavGroup[] = [
         icon: Wrench,
         permission: "assets.view",
       },
+    ],
+  },
+  {
+    label: "Knowledge & Communication",
+    icon: BookOpen,
+    items: [
       {
         label: "Documents Overview",
         href: "/documents",
@@ -318,6 +373,12 @@ export const navigationGroups: NavGroup[] = [
         icon: Timer,
         permission: "notifications.view",
       },
+    ],
+  },
+  {
+    label: "Calendar & Support",
+    icon: CalendarDays,
+    items: [
       {
         label: "Calendar",
         href: "/calendar",
@@ -369,7 +430,8 @@ export const navigationGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Control",
+    label: "Administration",
+    icon: Settings,
     items: [
       {
         label: "Reports",
@@ -408,9 +470,28 @@ export const navigationGroups: NavGroup[] = [
         permission: "notifications.view",
       },
       {
-        label: "Change Password",
-        href: "/change-password",
-        icon: CreditCard,
+        label: "Users",
+        href: "/settings/users",
+        icon: Users,
+        permission: "settings.view",
+      },
+      {
+        label: "Roles",
+        href: "/settings/roles",
+        icon: CheckCircle2,
+        permission: "roles.view",
+      },
+      {
+        label: "Permissions",
+        href: "/settings/permissions",
+        icon: ClipboardList,
+        permission: "permissions.view",
+      },
+      {
+        label: "Audit Logs",
+        href: "/settings/audit-logs",
+        icon: FileText,
+        permission: "audit_logs.view",
       },
       {
         label: "Company",

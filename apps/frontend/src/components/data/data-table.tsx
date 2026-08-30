@@ -32,7 +32,7 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
+    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>
@@ -45,7 +45,7 @@ export function DataTable<T>({
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={getRowKey(row)}>
+            <TableRow key={getRowKey(row)} className="transition-colors hover:bg-muted/35">
               {columns.map((column) => (
                 <TableCell key={column.key} className={column.className}>
                   {column.render(row)}

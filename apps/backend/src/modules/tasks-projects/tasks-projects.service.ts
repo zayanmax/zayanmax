@@ -729,7 +729,15 @@ export class TasksProjectsService {
   private taskInclude() {
     return {
       project: { select: { id: true, name: true } },
-      assignees: { where: { deletedAt: null } },
+      assignees: {
+        where: { deletedAt: null },
+        include: {
+          employee: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+          user: { select: { id: true, email: true } },
+        },
+      },
       _count: { select: { subtasks: true, comments: true, attachments: true } },
     };
   }

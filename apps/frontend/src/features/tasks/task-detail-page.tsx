@@ -445,8 +445,8 @@ function AssigneesSection({ taskId }: { taskId: string }) {
       header: "Assignee",
       render: (assignee) =>
         assignee.employeeId
-          ? employeeMap.get(assignee.employeeId) ?? assigneeLabel(assignee.employeeId, null)
-          : assigneeLabel(null, assignee.userId),
+          ? employeeMap.get(assignee.employeeId) ?? assigneeLabel(assignee)
+          : assigneeLabel(assignee),
     },
     { key: "createdAt", header: "Assigned", render: (assignee) => formatTaskDate(assignee.createdAt) },
   ];

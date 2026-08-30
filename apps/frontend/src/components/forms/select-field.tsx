@@ -1,5 +1,6 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ export function SelectField({
   placeholder = "Select",
   disabled,
   className,
+  icon: Icon,
 }: {
   value: string;
   onValueChange: (value: string) => void;
@@ -28,7 +30,10 @@ export function SelectField({
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  icon?: LucideIcon;
 }) {
+  const selectedOption = options.find((option) => option.value === value);
+
   return (
     <Select
       value={value}
@@ -38,7 +43,10 @@ export function SelectField({
       disabled={disabled}
     >
       <SelectTrigger className={className ?? "w-full"}>
-        <SelectValue placeholder={placeholder} />
+        {Icon ? <Icon className="size-4 text-muted-foreground" aria-hidden="true" /> : null}
+        <SelectValue placeholder={placeholder}>
+          {() => selectedOption?.label ?? placeholder}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>

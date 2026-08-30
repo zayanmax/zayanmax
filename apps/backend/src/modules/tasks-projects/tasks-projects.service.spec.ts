@@ -262,6 +262,16 @@ describe('TasksProjectsService', () => {
     expect(list.meta.total).toBe(2);
     expect(prisma.task.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        include: expect.objectContaining({
+          assignees: expect.objectContaining({
+            include: {
+              employee: {
+                select: { id: true, firstName: true, lastName: true, email: true },
+              },
+              user: { select: { id: true, email: true } },
+            },
+          }),
+        }),
         where: expect.objectContaining({
           companyId: 'company-id',
           projectId: 'project-id',
