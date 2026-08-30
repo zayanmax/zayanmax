@@ -1,5 +1,4 @@
 export type DemoModuleKey =
-  | "payroll"
   | "performance"
   | "recruitment"
   | "helpdesk"
@@ -53,63 +52,6 @@ function record(id: string, status: string, values: Record<string, string>): Dem
 }
 
 export const demoModuleConfigs: Record<DemoModuleKey, DemoModuleConfig> = {
-  payroll: {
-    key: "payroll",
-    title: "Payroll",
-    description:
-      "Prepare payroll periods, salary assignments, deductions, advances, employee line items, approvals, and payslip metadata.",
-    singular: "payroll item",
-    permission: "payroll.view",
-    statusOptions: ["DRAFT", "PROCESSING", "APPROVED", "PAID"],
-    fields: [
-      { key: "employee", label: "Employee", placeholder: "Employee name" },
-      { key: "period", label: "Pay period", placeholder: "August 2026" },
-      { key: "gross", label: "Gross pay", placeholder: "₹75,000" },
-      { key: "deductions", label: "Deductions", placeholder: "₹4,500" },
-      { key: "net", label: "Net pay", placeholder: "₹70,500" },
-    ],
-    initialRows: [
-      record("pay-001", "APPROVED", {
-        employee: "Aarav Sharma",
-        period: "August 2026",
-        gross: "₹92,000",
-        deductions: "₹7,400",
-        net: "₹84,600",
-      }),
-      record("pay-002", "PAID", {
-        employee: "Meera Reddy",
-        period: "August 2026",
-        gross: "₹78,000",
-        deductions: "₹5,250",
-        net: "₹72,750",
-      }),
-      record("pay-003", "PROCESSING", {
-        employee: "Rahul Verma",
-        period: "August 2026",
-        gross: "₹70,000",
-        deductions: "₹4,800",
-        net: "₹65,200",
-      }),
-      record("pay-004", "DRAFT", {
-        employee: "Sana Khan",
-        period: "August 2026",
-        gross: "₹68,000",
-        deductions: "₹3,950",
-        net: "₹64,050",
-      }),
-    ],
-    stats: [
-      { label: "Employees", helper: "In this run" },
-      { label: "Approved", helper: "Ready to pay", status: "APPROVED" },
-      { label: "Paid", helper: "Completed", status: "PAID" },
-      { label: "Net payroll", helper: "August 2026", value: "₹18.4L" },
-    ],
-    workflow: [
-      { title: "Calculate", description: "Combine assigned salary components, attendance, leave, advances, and deductions." },
-      { title: "Review", description: "Finance and HR validate exceptions before approving the payroll run." },
-      { title: "Pay", description: "Mark payments and publish payslip metadata; generated PDFs remain a later integration." },
-    ],
-  },
   performance: {
     key: "performance",
     title: "Performance",

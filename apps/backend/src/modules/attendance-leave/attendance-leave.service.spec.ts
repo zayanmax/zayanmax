@@ -374,6 +374,8 @@ describe('AttendanceLeaveService', () => {
     const result = await service.findCorrectionRequests('company-id', {
       page: 1,
       limit: 20,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
       employeeId: 'employee-id',
     });
 
@@ -397,6 +399,10 @@ describe('AttendanceLeaveService', () => {
     const service = new AttendanceLeaveService(prisma as never);
 
     await service.findCorrectionRequests('company-id', {
+      page: 1,
+      limit: 20,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
       status: AttendanceCorrectionStatusDto.REJECTED,
       fromDate: '2026-06-01',
       toDate: '2026-06-30',

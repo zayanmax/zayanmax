@@ -658,12 +658,26 @@ describe('AppController (e2e)', () => {
         name: `Payroll Structure ${suffix}`,
         description: 'E2E payroll structure',
         components: [
-          { name: 'Basic', code: 'BASIC', type: 'EARNING', amount: 30000 },
+          {
+            name: 'Basic',
+            code: 'BASIC',
+            type: 'EARNING',
+            calculationType: 'PERCENTAGE',
+            amount: 60,
+          },
+          {
+            name: 'Allowance',
+            code: 'ALLOWANCE',
+            type: 'EARNING',
+            calculationType: 'FIXED',
+            amount: 12000,
+          },
           {
             name: 'Professional Tax',
             code: 'PT',
             type: 'DEDUCTION',
-            amount: 300,
+            calculationType: 'PERCENTAGE',
+            amount: 1,
           },
         ],
       })
@@ -682,7 +696,7 @@ describe('AppController (e2e)', () => {
       })
       .expect(201);
 
-    await request(app.getHttpServer())
+    const advanceResponse = await request(app.getHttpServer())
       .post('/api/v1/payroll/advances')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
@@ -692,6 +706,7 @@ describe('AppController (e2e)', () => {
         notes: 'E2E advance',
       })
       .expect(201);
+    const advanceId = advanceResponse.body.data.id;
 
     for (const attendance of [
       { date: startDate, status: 'PRESENT' },
@@ -752,10 +767,20 @@ describe('AppController (e2e)', () => {
             expect.objectContaining({
               employeeId,
               payableDays: '2.5',
+              grossEarnings: '2500',
+              totalDeductions: '275',
+              advanceDeduction: '250',
+              netPay: '2225',
             }),
           ]),
         );
       });
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/payroll/runs/${payrollRunId}/status`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ status: 'PROCESSING' })
+      .expect(200);
 
     await request(app.getHttpServer())
       .patch(`/api/v1/payroll/runs/${payrollRunId}/status`)
@@ -770,6 +795,29 @@ describe('AppController (e2e)', () => {
       .expect(200);
 
     await request(app.getHttpServer())
+      .patch(`/api/v1/payroll/runs/${payrollRunId}/status`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ status: 'PAID' })
+      .expect(409);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/payroll/advances')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.data).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              id: advanceId,
+              paidAmount: '250',
+              balanceAmount: '750',
+              status: 'ACTIVE',
+            }),
+          ]),
+        );
+      });
+
+    await request(app.getHttpServer())
       .get(`/api/v1/payroll/payslips/${employeeId}`)
       .set('Authorization', `Bearer ${accessToken}`)
       .query({ payrollRunId })
@@ -780,7 +828,7 @@ describe('AppController (e2e)', () => {
             expect.objectContaining({
               payrollRunId,
               employeeId,
-              status: 'GENERATED',
+              status: 'PUBLISHED',
             }),
           ]),
         );

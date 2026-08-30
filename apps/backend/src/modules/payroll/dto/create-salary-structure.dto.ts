@@ -1,4 +1,5 @@
 import {
+  ArrayMinSize,
   IsBoolean,
   IsEnum,
   IsNotEmpty,
@@ -50,5 +51,6 @@ export class CreateSalaryStructureDto {
 
   @ValidateNested({ each: true })
   @Type(() => SalaryStructureComponentDto)
+  @ArrayMinSize(1)
   components!: SalaryStructureComponentDto[];
 }

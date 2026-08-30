@@ -3,7 +3,7 @@
 **Audit date:** 30 August 2026
 **Repository:** `C:\Users\naveenxd\Desktop\ZayanMax`
 **Scope:** Attendance, Leave, Payroll, Performance, and Recruitment
-**Current outcome:** Attendance and Leave are API-backed and complete within their documented v1 scopes. Payroll, Performance, and Recruitment remain audited presenter modules.
+**Current outcome:** Attendance, Leave, and Payroll are API-backed and complete within their documented v1 scopes. Performance and Recruitment remain audited presenter modules.
 
 ## 1. Purpose
 
@@ -13,11 +13,11 @@ This file is the implementation handoff for replacing the five presenter-data pa
 | --- | --- | --- | --- |
 | Attendance | `/attendance` | Real API-backed Attendance workspace | `attendance.view` |
 | Leave | `/leave` | Real API-backed Leave workspace | `leaves.view` |
-| Payroll | `/payroll` | `DemoModulePage module="payroll"` | `payroll.view` |
+| Payroll | `/payroll` | Real API-backed Payroll workspace | `payroll.view` |
 | Performance | `/performance` | `DemoModulePage module="performance"` | `performance.view` |
 | Recruitment | `/recruitment` | `DemoModulePage module="recruitment"` | `recruitment.view` |
 
-The remaining presenter pages must stay available until each replacement passes its module-specific definition of done. Attendance and Leave passed that gate on 30 August 2026; each route was switched and only its own presenter configuration was removed.
+The remaining presenter pages must stay available until each replacement passes its module-specific definition of done. Attendance, Leave, and Payroll passed that gate on 30 August 2026; each route was switched and only its own presenter configuration was removed.
 
 ## 2. Verified baseline
 
@@ -247,9 +247,9 @@ Request statuses are `PENDING`, `APPROVED`, `REJECTED`, and `CANCELLED`.
 
 ## 7. Payroll
 
-### 7.1 Readiness assessment
+### 7.1 Completion status
 
-Payroll exposes broad read/create contracts and a useful payroll-run detail response, but it is not ready for a production management UI until payroll generation is transactional and state transitions/calculation semantics are hardened.
+**Status: API BACKED / COMPLETE.** `/payroll` now uses an authenticated, permission-aware workspace backed by PostgreSQL. Salary structures, assignments, advances, periods, runs, employee line items, and payslip metadata use typed API contracts. Calculation, tenant-reference, lifecycle, advance-posting, and transaction blockers from the foundation audit are resolved for the documented v1 scope.
 
 ### 7.2 Endpoints
 
@@ -272,7 +272,50 @@ Payroll exposes broad read/create contracts and a useful payroll-run detail resp
 
 Component types are `EARNING` and `DEDUCTION`; calculation types are `FIXED` and `PERCENTAGE`. Assignment statuses are `ACTIVE` and `INACTIVE`. Advance statuses are `ACTIVE`, `SETTLED`, and `CANCELLED`. Run statuses are `DRAFT`, `PROCESSING`, `APPROVED`, `PAID`, and `CANCELLED`.
 
-### 7.3 Prisma models
+### 7.3 Calculation and rounding contract
+
+- Working days are inclusive calendar days in the period.
+- A fixed component is its configured money amount. A percentage component is `monthlyGross × configuredPercentage ÷ 100`.
+- Every component is prorated as `fullComponentAmount × payableDays ÷ workingDays`.
+- Each component and aggregate is rounded to two decimal places using decimal `ROUND_HALF_UP`; JavaScript floating-point arithmetic is not authoritative.
+- Gross earnings are the sum of prorated earning components. When a structure has no earning components, prorated monthly gross is the fallback.
+- Total deductions are the sum of prorated structure deductions and planned salary-advance deductions.
+- Net pay is `grossEarnings - totalDeductions`; generation rejects a structure whose deductions would make net pay negative.
+- Run gross, deduction, and net totals are decimal sums of stored employee line items.
+
+### 7.4 Attendance and leave treatment
+
+- Approved leave takes precedence over holiday and attendance records for the same day.
+- Approved paid leave contributes one leave day and one payable day. Approved unpaid leave contributes one leave day and zero payable days.
+- An active company holiday contributes one payable day.
+- `PRESENT`, `LATE`, `WORK_FROM_HOME`, `HOLIDAY`, and attendance `LEAVE` contribute one payable day.
+- `HALF_DAY` contributes 0.5 payable and 0.5 absent days.
+- `ABSENT` or a missing attendance record contributes one absent day.
+- This v1 model deliberately uses calendar days; rostered workweeks and advanced workforce calendars are not yet modeled.
+
+### 7.5 Salary advances
+
+- Run generation plans deductions from active, positive-balance advances in oldest-first order.
+- Each planned deduction is capped by installment amount, remaining balance, and gross available after structure deductions.
+- Generating or approving a run does not mutate an advance.
+- The `APPROVED -> PAID` transaction posts each planned deduction once, increments `paidAmount`, decrements `balanceAmount`, and sets `SETTLED` when the balance reaches zero.
+- A conditional status claim and terminal `PAID` state make repeated payment attempts fail without double recovery.
+
+### 7.6 Run lifecycle and transaction boundaries
+
+Legal transitions are:
+
+```text
+DRAFT -> PROCESSING -> APPROVED -> PAID
+  |          |            |
+  +----------+------------+-> CANCELLED
+```
+
+`PAID` and `CANCELLED` are terminal. Notes can be edited only while a run is `DRAFT` or `PROCESSING`.
+
+Run generation creates the run, every employee line item, every payslip, and the audit record in one callback transaction. Any failure leaves no partial run, line items, or payslips. Payment posts the status change, every advance recovery, payslip publication, and audit record in a second callback transaction; rollback tests prove that a mid-operation failure leaves neither partial recovery nor a partially paid run.
+
+### 7.7 Prisma models
 
 - `SalaryStructure`
 - `SalaryStructureComponent`
@@ -283,39 +326,41 @@ Component types are `EARNING` and `DEDUCTION`; calculation types are `FIXED` and
 - `PayrollEmployeeLineItem`
 - `Payslip`
 
-### 7.4 Missing frontend flows
+### 7.8 Delivered frontend flows
 
-- Tabbed or grouped list surfaces for periods, runs, structures, assignments, and advances.
-- Run creation with a clearly consequential confirmation.
-- Run detail with employee line items, totals, exceptions, notes, and payslip links.
-- Legal status actions based on backend-provided current state.
-- Employee payslip lookup/download metadata experience.
-- Creation forms using real employee/structure/period options rather than identifiers.
+- Overview metrics use the latest real run, period, line-item count, and active-advance data.
+- Grouped tabs provide runs, periods, salary structures, salary assignments, salary advances, and payslips without overloading the page.
+- Creation forms use real employee, structure, and period selectors; percentage/fixed structure components are dynamic and validated with Zod.
+- Run creation and every consequential transition use confirmation dialogs.
+- Run detail exposes authoritative totals, employee payable/leave/absent days, component evidence, advance deductions, notes, and payslip metadata.
+- Only legal next actions are offered. Notes are available only in editable states.
+- Payslip metadata is accessible; there is no fake PDF or download action because storage/rendering is not configured.
+- All loading, error, empty, permission, mutation, pagination, filter, and status states use the shared application UI contracts.
 
-### 7.5 Backend release blockers
+### 7.9 Tenant safeguards
 
-| Severity | Gap | Required resolution |
-| --- | --- | --- |
-| Critical | Payroll run, line item, and payslip creation is not one transaction | Wrap generation in a database transaction and test rollback on failure |
-| Critical | `PERCENTAGE` components are represented but calculation treats amounts as fixed values | Implement and test the percentage base/rounding contract or remove the unsupported option |
-| Critical | Run status accepts arbitrary transitions | Define transition graph, prerequisites, authorization, idempotency, and immutable states |
-| Critical | Advance deductions do not reduce/settle advance balances when payroll is paid | Define posting behavior and perform it transactionally/idempotently |
-| Blocker for safe writes | Employee and salary-structure references are not consistently company-validated | Add tenant-scoped reference checks |
-| Important | Working days use calendar days rather than schedule/holiday rules | Define business calendar calculation before financial use |
-| Important | Period and assignment date ordering is not fully validated | Enforce chronological and overlap rules |
-| Important | Structures, assignments, advances, and periods lack detail/update contracts | Limit the first UI to create/list or add explicit lifecycle endpoints |
+- Employee, salary structure, payroll period, run, payslip employee, assignment, and advance references are resolved inside `user.companyId`.
+- Salary structures must be active and company-owned before assignment.
+- Assignment periods cannot overlap for the same employee, and payroll periods cannot overlap inside a company.
+- Every run/list/detail/update/status lookup includes the authenticated company.
+- Cross-company employee/structure/period/run/payslip references are rejected and covered by service tests.
+- UI permissions use `payroll.view` for access and `payroll.manage` for mutations; backend guards remain authoritative.
 
-### 7.6 Existing backend test coverage
+### 7.10 Demo data and verification
 
-The payroll spec covers structure creation, assignments, duplicate-run rejection, attendance-fed run/payslip generation, status audit, and missing runs. Extend it with transaction rollback, percentage calculations, rounding, advances, legal/illegal transitions, period overlap, tenant references, and paid-run immutability.
+The stable, idempotent demo seed creates three structures, twenty active employee assignments, three advances (active and settled), two non-overlapping periods, one previous paid run, one current approved run, forty employee line items, and forty payslips. The paid run has published payslips and posted advance state; the approved run contains planned deductions without prematurely mutating advances.
 
-### 7.7 Implementation order
+The seed was run twice with identical counts. Database reconciliation confirmed for both runs that stored totals equal the sum of employee lines and that every line satisfies `gross - deductions = net`. The paid run contains twenty published payslips; the approved run contains twenty generated payslips. Every seeded advance satisfies `paidAmount + balanceAmount = amount`.
 
-1. Resolve all critical calculation, transaction, posting, and state-machine blockers.
-2. Add tests before allowing frontend mutations to use the hardened contracts.
-3. Implement typed list/detail/action hooks and management forms.
-4. Present computed values as read-only outputs; never recalculate authoritative payroll totals in the browser.
-5. Switch `/payroll`; then remove only the Payroll presenter configuration.
+Automated coverage includes percentage and fixed calculations, half-up rounding, proration, paid/unpaid leave, holidays and attendance precedence, advance caps and settlement, period/assignment/reference validation, legal and illegal transitions, paid immutability, duplicate-run protection, transaction rollback for generation and payment, tenant isolation, and payslip access. Payroll E2E exercises the complete `DRAFT -> PROCESSING -> APPROVED -> PAID` lifecycle, one-time advance recovery, repeat-payment rejection, and published payslip metadata.
+
+### 7.11 Deliberate v1 limits
+
+- No statutory Indian payroll compliance engine, PF/ESI/PT/TDS filing, Form 16, bank transfer, accounting integration, or multi-country payroll.
+- No generated/downloadable payslip PDF or email delivery; the implemented contract is payslip metadata and publication state.
+- No salary revision workflow, complex arrears, bonus/incentive engine, or reimbursement integration.
+- Workdays remain inclusive calendar days rather than roster/schedule-derived days.
+- Structures, assignments, advances, and periods are create/list in v1; unsupported edit/delete flows are not implied by the UI.
 
 ## 8. Performance
 
@@ -465,7 +510,7 @@ Recommended sequence:
 
 1. **Attendance** — completed on 30 August 2026; keep it as the reference implementation for the remaining modules.
 2. **Leave** — completed on 30 August 2026; API-backed requests, approvals, balances, types, and cancellation are live within the documented v1 scope.
-3. **Payroll** — complete financial transaction and calculation hardening before UI activation.
+3. **Payroll** — completed on 30 August 2026; API-backed structures, assignments, advances, periods, runs, calculations, posted recovery, and payslip metadata are live within the documented v1 scope.
 4. **Performance** — establish secondary read contracts and workflow transitions.
 5. **Recruitment** — complete conversion transactionality and full pipeline read contracts.
 
@@ -496,4 +541,4 @@ A People & HR module is complete only when:
 - backend and frontend tests/checks pass from a known baseline;
 - the route replacement and matching demo-config removal happen last and together.
 
-**Next implementation prompt:** Select exactly one of Payroll, Performance, or Recruitment and complete its backend safety gates before replacing its presenter route. Attendance and Leave require no remaining implementation work inside their documented v1 scopes.
+**Next implementation prompt:** Select exactly one of Performance or Recruitment and complete its backend safety gates before replacing its presenter route. Attendance, Leave, and Payroll require no remaining implementation work inside their documented v1 scopes.

@@ -1,5 +1,11 @@
 import { createHash } from 'node:crypto';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+import {
+  componentFullAmount,
+  prorateMoney,
+  roundMoney,
+  sumMoney,
+} from '../src/modules/payroll/payroll-calculation';
 
 const prisma = new PrismaClient();
 const companyId = '00000000-0000-0000-0000-000000000001';
@@ -23,6 +29,70 @@ function day(offset: number, hour = 10, minute = 0) {
   value.setDate(value.getDate() + offset);
   value.setHours(hour, minute, 0, 0);
   return value;
+}
+
+function dateKey(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function addUtcDay(value: Date) {
+  const next = new Date(value);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next;
+}
+
+function moneyNumber(value: Prisma.Decimal | number | string) {
+  return Number(roundMoney(value));
+}
+
+function summarizeDemoPayrollDays(
+  startDate: Date,
+  endDate: Date,
+  attendance: Array<{ date: Date; status: string }>,
+  holidays: Array<{ date: Date }>,
+  leaveRequests: Array<{
+    fromDate: Date;
+    toDate: Date;
+    leaveType: { paid: boolean };
+  }>,
+) {
+  const attendanceByDay = new Map(
+    attendance.map((record) => [dateKey(record.date), record.status]),
+  );
+  const holidayDays = new Set(holidays.map((holiday) => dateKey(holiday.date)));
+  const leaveByDay = new Map<string, boolean>();
+  for (const request of leaveRequests) {
+    const start = request.fromDate < startDate ? startDate : request.fromDate;
+    const end = request.toDate > endDate ? endDate : request.toDate;
+    for (let date = new Date(start); date <= end; date = addUtcDay(date)) {
+      leaveByDay.set(dateKey(date), request.leaveType.paid);
+    }
+  }
+
+  const summary = { payableDays: 0, leaveDays: 0, absentDays: 0 };
+  for (let date = new Date(startDate); date <= endDate; date = addUtcDay(date)) {
+    const key = dateKey(date);
+    if (leaveByDay.has(key)) {
+      summary.leaveDays += 1;
+      if (leaveByDay.get(key)) summary.payableDays += 1;
+      continue;
+    }
+    if (holidayDays.has(key)) {
+      summary.payableDays += 1;
+      continue;
+    }
+    const status = attendanceByDay.get(key);
+    if (['PRESENT', 'LATE', 'WORK_FROM_HOME', 'HOLIDAY', 'LEAVE'].includes(status ?? '')) {
+      summary.payableDays += 1;
+      if (status === 'LEAVE') summary.leaveDays += 1;
+    } else if (status === 'HALF_DAY') {
+      summary.payableDays += 0.5;
+      summary.absentDays += 0.5;
+    } else {
+      summary.absentDays += 1;
+    }
+  }
+  return summary;
 }
 
 async function main() {
@@ -76,6 +146,39 @@ async function main() {
     )
     .map((employee) => employee.id);
   if (e2eEmployeeIds.length > 0) {
+    const automatedPayrollPeriods = await prisma.payrollPeriod.findMany({
+      where: { companyId, name: { startsWith: 'Payroll Period ' } },
+      select: { id: true, name: true },
+    });
+    const automatedPayrollPeriodIds = automatedPayrollPeriods
+      .filter((period) => /^Payroll Period \d+$/.test(period.name))
+      .map((period) => period.id);
+    if (automatedPayrollPeriodIds.length > 0) {
+      await prisma.payrollRun.deleteMany({
+        where: { companyId, payrollPeriodId: { in: automatedPayrollPeriodIds } },
+      });
+      await prisma.payrollPeriod.deleteMany({
+        where: { companyId, id: { in: automatedPayrollPeriodIds } },
+      });
+    }
+    await prisma.employeeSalaryAssignment.deleteMany({
+      where: { companyId, employeeId: { in: e2eEmployeeIds } },
+    });
+    await prisma.salaryAdvance.deleteMany({
+      where: { companyId, employeeId: { in: e2eEmployeeIds } },
+    });
+    const automatedStructures = await prisma.salaryStructure.findMany({
+      where: { companyId, name: { startsWith: 'Payroll Structure ' } },
+      select: { id: true, name: true },
+    });
+    const automatedStructureIds = automatedStructures
+      .filter((structure) => /^Payroll Structure \d+$/.test(structure.name))
+      .map((structure) => structure.id);
+    if (automatedStructureIds.length > 0) {
+      await prisma.salaryStructure.deleteMany({
+        where: { companyId, id: { in: automatedStructureIds } },
+      });
+    }
     await prisma.attendanceCorrectionRequest.deleteMany({
       where: { companyId, employeeId: { in: e2eEmployeeIds } },
     });
@@ -711,6 +814,438 @@ async function main() {
         reviewComment: request.reviewComment ?? undefined,
         createdById: admin.id,
         updatedById: request.status === 'PENDING' ? undefined : admin.id,
+      },
+    });
+  }
+
+  const payrollStructureData = [
+    {
+      key: 'staff',
+      name: 'Standard Staff Salary',
+      description: 'Balanced salary structure for delivery and support teams.',
+      components: [
+        ['Basic salary', 'BASIC', 'EARNING', 'PERCENTAGE', 60],
+        ['House rent allowance', 'HRA', 'EARNING', 'PERCENTAGE', 20],
+        ['Flexible allowance', 'FLEX', 'EARNING', 'PERCENTAGE', 20],
+        ['Professional tax', 'PT', 'DEDUCTION', 'FIXED', 200],
+      ],
+    },
+    {
+      key: 'sales',
+      name: 'Sales & Growth Salary',
+      description: 'Salary structure for customer growth and sales teams.',
+      components: [
+        ['Basic salary', 'BASIC', 'EARNING', 'PERCENTAGE', 55],
+        ['House rent allowance', 'HRA', 'EARNING', 'PERCENTAGE', 20],
+        ['Variable allowance', 'VARIABLE', 'EARNING', 'PERCENTAGE', 25],
+        ['Professional tax', 'PT', 'DEDUCTION', 'FIXED', 200],
+        ['Sales withholding', 'SALES-WH', 'DEDUCTION', 'PERCENTAGE', 2],
+      ],
+    },
+    {
+      key: 'management',
+      name: 'Leadership Salary',
+      description: 'Salary structure for management and company leadership.',
+      components: [
+        ['Basic salary', 'BASIC', 'EARNING', 'PERCENTAGE', 50],
+        ['House rent allowance', 'HRA', 'EARNING', 'PERCENTAGE', 20],
+        ['Leadership allowance', 'LEAD', 'EARNING', 'PERCENTAGE', 30],
+        ['Professional tax', 'PT', 'DEDUCTION', 'FIXED', 200],
+        ['Management withholding', 'MGMT-WH', 'DEDUCTION', 'PERCENTAGE', 5],
+      ],
+    },
+  ] as const;
+
+  for (const structure of payrollStructureData) {
+    const salaryStructureId = stableId('salary-structure', structure.key);
+    await prisma.salaryStructure.upsert({
+      where: { id: salaryStructureId },
+      update: {
+        name: structure.name,
+        description: structure.description,
+        status: 'ACTIVE',
+        deletedAt: null,
+        updatedById: admin.id,
+      },
+      create: {
+        id: salaryStructureId,
+        companyId,
+        name: structure.name,
+        description: structure.description,
+        createdById: admin.id,
+      },
+    });
+    for (const [name, code, type, calculationType, amount] of structure.components) {
+      await prisma.salaryStructureComponent.upsert({
+        where: {
+          salaryStructureId_code: { salaryStructureId, code },
+        },
+        update: { name, type, calculationType, amount, taxable: type === 'EARNING' },
+        create: {
+          id: stableId('salary-component', `${structure.key}:${code}`),
+          companyId,
+          salaryStructureId,
+          name,
+          code,
+          type,
+          calculationType,
+          amount,
+          taxable: type === 'EARNING',
+        },
+      });
+    }
+  }
+
+  const assignmentByEmployee = new Map<string, {
+    id: string;
+    monthlyGross: Prisma.Decimal;
+    structureKey: string;
+  }>();
+  for (let employeeIndex = 0; employeeIndex < employees.length; employeeIndex += 1) {
+    const employee = employees[employeeIndex];
+    const structureKey = employee.departmentId === stableId('department', 'Sales')
+      ? 'sales'
+      : employee.departmentId === stableId('department', 'Management')
+        ? 'management'
+        : 'staff';
+    const assignmentId = stableId('salary-assignment', employee.employeeCode);
+    const monthlyGross = new Prisma.Decimal(42000 + employeeIndex * 2500);
+    await prisma.employeeSalaryAssignment.upsert({
+      where: { id: assignmentId },
+      update: {
+        employeeId: employee.id,
+        salaryStructureId: stableId('salary-structure', structureKey),
+        effectiveFrom: day(-365, 12),
+        effectiveTo: null,
+        monthlyGross,
+        status: 'ACTIVE',
+        deletedAt: null,
+        updatedById: admin.id,
+      },
+      create: {
+        id: assignmentId,
+        companyId,
+        employeeId: employee.id,
+        salaryStructureId: stableId('salary-structure', structureKey),
+        effectiveFrom: day(-365, 12),
+        monthlyGross,
+        createdById: admin.id,
+      },
+    });
+    assignmentByEmployee.set(employee.id, { id: assignmentId, monthlyGross, structureKey });
+  }
+
+  const advanceData = [
+    {
+      key: 'leadership-relocation',
+      employee: employees[0],
+      amount: 12000,
+      installmentAmount: 2000,
+      paidAmount: 2000,
+      balanceAmount: 10000,
+      status: 'ACTIVE' as const,
+      notes: 'Relocation support recovered through scheduled payroll installments.',
+    },
+    {
+      key: 'equipment-settled',
+      employee: employees[1],
+      amount: 5000,
+      installmentAmount: 2500,
+      paidAmount: 5000,
+      balanceAmount: 0,
+      status: 'SETTLED' as const,
+      notes: 'Equipment advance fully recovered in the closed payroll cycle.',
+    },
+    {
+      key: 'certification-active',
+      employee: employees[2],
+      amount: 15000,
+      installmentAmount: 3000,
+      paidAmount: 0,
+      balanceAmount: 15000,
+      status: 'ACTIVE' as const,
+      notes: 'Professional certification advance awaiting first recovery.',
+    },
+  ];
+  for (const advance of advanceData) {
+    await prisma.salaryAdvance.upsert({
+      where: { id: stableId('salary-advance', advance.key) },
+      update: {
+        employeeId: advance.employee.id,
+        amount: advance.amount,
+        installmentAmount: advance.installmentAmount,
+        paidAmount: advance.paidAmount,
+        balanceAmount: advance.balanceAmount,
+        status: advance.status,
+        requestedAt: day(-40, 12),
+        approvedAt: day(-39, 12),
+        notes: advance.notes,
+        deletedAt: null,
+        updatedById: admin.id,
+      },
+      create: {
+        id: stableId('salary-advance', advance.key),
+        companyId,
+        employeeId: advance.employee.id,
+        amount: advance.amount,
+        installmentAmount: advance.installmentAmount,
+        paidAmount: advance.paidAmount,
+        balanceAmount: advance.balanceAmount,
+        status: advance.status,
+        requestedAt: day(-40, 12),
+        approvedAt: day(-39, 12),
+        notes: advance.notes,
+        createdById: admin.id,
+      },
+    });
+  }
+
+  const payrollPeriodData = [
+    {
+      key: 'closed-cycle',
+      name: 'Closed Payroll Cycle',
+      startDate: day(-6, 12),
+      endDate: day(-4, 12),
+      payDate: day(-3, 12),
+      runStatus: 'PAID' as const,
+      notes: 'Closed demo cycle with published payslips and posted advance recovery.',
+    },
+    {
+      key: 'current-cycle',
+      name: 'Current Payroll Cycle',
+      startDate: day(-3, 12),
+      endDate: day(0, 12),
+      payDate: day(1, 12),
+      runStatus: 'APPROVED' as const,
+      notes: 'Current demo cycle reviewed and approved, ready for payment.',
+    },
+  ];
+
+  for (const payrollPeriod of payrollPeriodData) {
+    const payrollPeriodId = stableId('payroll-period', payrollPeriod.key);
+    const payrollRunId = stableId('payroll-run', payrollPeriod.key);
+    await prisma.payrollPeriod.upsert({
+      where: { id: payrollPeriodId },
+      update: {
+        name: payrollPeriod.name,
+        startDate: payrollPeriod.startDate,
+        endDate: payrollPeriod.endDate,
+        payDate: payrollPeriod.payDate,
+        status: 'ACTIVE',
+        deletedAt: null,
+        updatedById: admin.id,
+      },
+      create: {
+        id: payrollPeriodId,
+        companyId,
+        name: payrollPeriod.name,
+        startDate: payrollPeriod.startDate,
+        endDate: payrollPeriod.endDate,
+        payDate: payrollPeriod.payDate,
+        createdById: admin.id,
+      },
+    });
+    await prisma.payrollRun.upsert({
+      where: { id: payrollRunId },
+      update: {
+        payrollPeriodId,
+        status: payrollPeriod.runStatus,
+        notes: payrollPeriod.notes,
+        deletedAt: null,
+        updatedById: admin.id,
+      },
+      create: {
+        id: payrollRunId,
+        companyId,
+        payrollPeriodId,
+        status: payrollPeriod.runStatus,
+        notes: payrollPeriod.notes,
+        createdById: admin.id,
+      },
+    });
+
+    const [periodAttendance, periodHolidays, periodLeaves] = await Promise.all([
+      prisma.attendanceRecord.findMany({
+        where: {
+          companyId,
+          employeeId: { in: employees.map((employee) => employee.id) },
+          date: { gte: payrollPeriod.startDate, lte: payrollPeriod.endDate },
+          deletedAt: null,
+        },
+        select: { employeeId: true, date: true, status: true },
+      }),
+      prisma.holiday.findMany({
+        where: {
+          companyId,
+          date: { gte: payrollPeriod.startDate, lte: payrollPeriod.endDate },
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        select: { date: true },
+      }),
+      prisma.leaveRequest.findMany({
+        where: {
+          companyId,
+          employeeId: { in: employees.map((employee) => employee.id) },
+          status: 'APPROVED',
+          fromDate: { lte: payrollPeriod.endDate },
+          toDate: { gte: payrollPeriod.startDate },
+          deletedAt: null,
+        },
+        select: {
+          employeeId: true,
+          fromDate: true,
+          toDate: true,
+          leaveType: { select: { paid: true } },
+        },
+      }),
+    ]);
+    const workingDays =
+      Math.floor(
+        (payrollPeriod.endDate.getTime() - payrollPeriod.startDate.getTime()) /
+          86_400_000,
+      ) + 1;
+    const runTotals = { gross: [] as number[], deductions: [] as number[], net: [] as number[] };
+
+    for (const employee of employees) {
+      const assignment = assignmentByEmployee.get(employee.id);
+      if (!assignment) throw new Error(`Missing demo salary assignment for ${employee.employeeCode}`);
+      const structure = payrollStructureData.find((item) => item.key === assignment.structureKey);
+      if (!structure) throw new Error(`Missing demo salary structure ${assignment.structureKey}`);
+      const daySummary = summarizeDemoPayrollDays(
+        payrollPeriod.startDate,
+        payrollPeriod.endDate,
+        periodAttendance.filter((record) => record.employeeId === employee.id),
+        periodHolidays,
+        periodLeaves.filter((request) => request.employeeId === employee.id),
+      );
+      const earningComponents = structure.components.filter((component) => component[2] === 'EARNING');
+      const deductionComponents = structure.components.filter((component) => component[2] === 'DEDUCTION');
+      const earnings = earningComponents.map(([name, code, , calculationType, amount]) => {
+        const calculated = prorateMoney(
+          componentFullAmount(assignment.monthlyGross, { calculationType, amount }),
+          daySummary.payableDays,
+          workingDays,
+        );
+        return {
+          kind: 'STRUCTURE',
+          name,
+          code,
+          calculationType,
+          configuredValue: amount,
+          amount: moneyNumber(calculated),
+        };
+      });
+      const structureDeductions = deductionComponents.map(([name, code, , calculationType, amount]) => {
+        const calculated = prorateMoney(
+          componentFullAmount(assignment.monthlyGross, { calculationType, amount }),
+          daySummary.payableDays,
+          workingDays,
+        );
+        return {
+          kind: 'STRUCTURE',
+          name,
+          code,
+          calculationType,
+          configuredValue: amount,
+          amount: moneyNumber(calculated),
+        };
+      });
+      const advanceDeductions: Array<{
+        kind: 'ADVANCE';
+        name: string;
+        code: string;
+        advanceId: string;
+        amount: number;
+      }> = [];
+      if (payrollPeriod.key === 'closed-cycle' && employee.id === employees[0].id) {
+        advanceDeductions.push({ kind: 'ADVANCE', name: 'Salary advance', code: 'ADVANCE', advanceId: stableId('salary-advance', 'leadership-relocation'), amount: 2000 });
+      }
+      if (payrollPeriod.key === 'closed-cycle' && employee.id === employees[1].id) {
+        advanceDeductions.push({ kind: 'ADVANCE', name: 'Salary advance', code: 'ADVANCE', advanceId: stableId('salary-advance', 'equipment-settled'), amount: 2500 });
+      }
+      if (payrollPeriod.key === 'current-cycle' && employee.id === employees[0].id) {
+        advanceDeductions.push({ kind: 'ADVANCE', name: 'Salary advance', code: 'ADVANCE', advanceId: stableId('salary-advance', 'leadership-relocation'), amount: 2000 });
+      }
+      if (payrollPeriod.key === 'current-cycle' && employee.id === employees[2].id) {
+        advanceDeductions.push({ kind: 'ADVANCE', name: 'Salary advance', code: 'ADVANCE', advanceId: stableId('salary-advance', 'certification-active'), amount: 3000 });
+      }
+      const grossEarnings = sumMoney(earnings.map((component) => component.amount));
+      const advanceDeduction = sumMoney(advanceDeductions.map((deduction) => deduction.amount));
+      const totalDeductions = sumMoney([
+        ...structureDeductions.map((component) => component.amount),
+        advanceDeduction,
+      ]);
+      const netPay = roundMoney(grossEarnings.minus(totalDeductions));
+      const lineItemId = stableId('payroll-line', `${payrollPeriod.key}:${employee.employeeCode}`);
+      const lineData = {
+        companyId,
+        payrollRunId,
+        employeeId: employee.id,
+        salaryAssignmentId: assignment.id,
+        workingDays,
+        payableDays: daySummary.payableDays,
+        leaveDays: daySummary.leaveDays,
+        absentDays: daySummary.absentDays,
+        grossEarnings,
+        totalDeductions,
+        advanceDeduction,
+        netPay,
+        earnings,
+        deductions: [...structureDeductions, ...advanceDeductions],
+      };
+      await prisma.payrollEmployeeLineItem.upsert({
+        where: { id: lineItemId },
+        update: lineData,
+        create: { id: lineItemId, ...lineData },
+      });
+      const payslipNumber = `ZM-${payrollPeriod.key === 'closed-cycle' ? 'CLOSED' : 'CURRENT'}-${employee.employeeCode}`;
+      await prisma.payslip.upsert({
+        where: { id: stableId('payslip', `${payrollPeriod.key}:${employee.employeeCode}`) },
+        update: {
+          payrollRunId,
+          payrollLineItemId: lineItemId,
+          employeeId: employee.id,
+          payslipNumber,
+          status: payrollPeriod.runStatus === 'PAID' ? 'PUBLISHED' : 'GENERATED',
+          generatedAt: payrollPeriod.endDate,
+          fileName: null,
+          storageKey: null,
+          metadata: {
+            periodName: payrollPeriod.name,
+            generatedFrom: 'API-backed payroll demo seed',
+          },
+        },
+        create: {
+          id: stableId('payslip', `${payrollPeriod.key}:${employee.employeeCode}`),
+          companyId,
+          payrollRunId,
+          payrollLineItemId: lineItemId,
+          employeeId: employee.id,
+          payslipNumber,
+          status: payrollPeriod.runStatus === 'PAID' ? 'PUBLISHED' : 'GENERATED',
+          generatedAt: payrollPeriod.endDate,
+          metadata: {
+            periodName: payrollPeriod.name,
+            generatedFrom: 'API-backed payroll demo seed',
+          },
+        },
+      });
+      runTotals.gross.push(moneyNumber(grossEarnings));
+      runTotals.deductions.push(moneyNumber(totalDeductions));
+      runTotals.net.push(moneyNumber(netPay));
+    }
+
+    await prisma.payrollRun.update({
+      where: { id: payrollRunId },
+      data: {
+        totalGross: sumMoney(runTotals.gross),
+        totalDeductions: sumMoney(runTotals.deductions),
+        totalNet: sumMoney(runTotals.net),
+        processedAt: payrollPeriod.endDate,
+        approvedAt: payrollPeriod.endDate,
+        paidAt: payrollPeriod.runStatus === 'PAID' ? payrollPeriod.payDate : null,
+        cancelledAt: null,
       },
     });
   }
@@ -1879,6 +2414,13 @@ async function main() {
     leaveTypes: await prisma.leaveType.count({ where: { companyId, deletedAt: null } }),
     leaveBalances: await prisma.leaveBalance.count({ where: { companyId, year: referenceDate.getFullYear() } }),
     leaveRequests: await prisma.leaveRequest.count({ where: { companyId, deletedAt: null } }),
+    salaryStructures: await prisma.salaryStructure.count({ where: { companyId, deletedAt: null } }),
+    salaryAssignments: await prisma.employeeSalaryAssignment.count({ where: { companyId, deletedAt: null } }),
+    salaryAdvances: await prisma.salaryAdvance.count({ where: { companyId, deletedAt: null } }),
+    payrollPeriods: await prisma.payrollPeriod.count({ where: { companyId, deletedAt: null } }),
+    payrollRuns: await prisma.payrollRun.count({ where: { companyId, deletedAt: null } }),
+    payrollLineItems: await prisma.payrollEmployeeLineItem.count({ where: { companyId } }),
+    payslips: await prisma.payslip.count({ where: { companyId } }),
     clients: await prisma.client.count({
       where: { companyId, deletedAt: null },
     }),
