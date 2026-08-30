@@ -178,15 +178,24 @@ success.
 Demo/Staging uses the same build but different data. The known development seed
 and full demo dataset are never part of build, pre-deploy, or start commands.
 
-To intentionally seed a disposable Demo/Staging environment, temporarily set
-`ALLOW_DEVELOPMENT_SEED=true` and `ALLOW_DEMO_SEED=true`, then run:
+For a disposable environment created with the development seed, run the two
+commands in order. For a production-bootstrapped disposable demo, run only the
+demo seed; it resolves the tenant from `DEMO_ADMIN_EMAIL` (default
+`admin@zayan.test`) instead of creating a second development company.
 
 ```powershell
-railway ssh --service zayanmax-backend npm run prisma:seed:dev
-railway ssh --service zayanmax-backend npm run prisma:seed:demo
+railway ssh --service zayanmax-backend env ALLOW_DEVELOPMENT_SEED=true npm run prisma:seed:dev
+railway ssh --service zayanmax-backend env ALLOW_DEMO_SEED=true npm run prisma:seed:demo
 ```
 
-Remove both flags afterwards. Never set either flag in Production.
+To reset all operational data and non-admin users while preserving the company,
+administrator credentials, roles, and permissions:
+
+```powershell
+railway ssh --service zayanmax-backend env ALLOW_DEMO_CLEANUP=true CONFIRM_DEMO_CLEANUP=DELETE_ZAYANMAX_DEMO_DATA npm run prisma:cleanup:demo
+```
+
+The flags above are command-scoped and are not persisted as Railway variables.
 
 ## Smoke Test
 

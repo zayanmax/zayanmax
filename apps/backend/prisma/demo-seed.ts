@@ -6,9 +6,9 @@ import {
   roundMoney,
   sumMoney,
 } from '../src/modules/payroll/payroll-calculation';
+import { resolveDemoSeedTarget } from '../src/config/demo-seed-target';
 
 const prisma = new PrismaClient();
-const companyId = '00000000-0000-0000-0000-000000000001';
 const referenceDate = new Date();
 referenceDate.setHours(0, 0, 0, 0);
 
@@ -70,7 +70,11 @@ function summarizeDemoPayrollDays(
   }
 
   const summary = { payableDays: 0, leaveDays: 0, absentDays: 0 };
-  for (let date = new Date(startDate); date <= endDate; date = addUtcDay(date)) {
+  for (
+    let date = new Date(startDate);
+    date <= endDate;
+    date = addUtcDay(date)
+  ) {
     const key = dateKey(date);
     if (leaveByDay.has(key)) {
       summary.leaveDays += 1;
@@ -82,7 +86,11 @@ function summarizeDemoPayrollDays(
       continue;
     }
     const status = attendanceByDay.get(key);
-    if (['PRESENT', 'LATE', 'WORK_FROM_HOME', 'HOLIDAY', 'LEAVE'].includes(status ?? '')) {
+    if (
+      ['PRESENT', 'LATE', 'WORK_FROM_HOME', 'HOLIDAY', 'LEAVE'].includes(
+        status ?? '',
+      )
+    ) {
       summary.payableDays += 1;
       if (status === 'LEAVE') summary.leaveDays += 1;
     } else if (status === 'HALF_DAY') {
@@ -95,14 +103,12 @@ function summarizeDemoPayrollDays(
   return summary;
 }
 
-async function main() {
-  const company = await prisma.company.findUnique({ where: { id: companyId } });
-  const admin = await prisma.user.findUnique({
-    where: { email: 'admin@zayan.test' },
-  });
-  if (!company || !admin) {
-    throw new Error('Run npm run prisma:seed before npm run prisma:seed:demo.');
-  }
+export async function runDemoSeed() {
+  const { company, admin } = await resolveDemoSeedTarget(
+    prisma,
+    process.env.DEMO_ADMIN_EMAIL ?? 'admin@zayan.test',
+  );
+  const companyId = company.id;
 
   // Keep the presentation workspace clean when E2E suites have shared the local database.
   await prisma.project.deleteMany({
@@ -155,7 +161,10 @@ async function main() {
       .map((period) => period.id);
     if (automatedPayrollPeriodIds.length > 0) {
       await prisma.payrollRun.deleteMany({
-        where: { companyId, payrollPeriodId: { in: automatedPayrollPeriodIds } },
+        where: {
+          companyId,
+          payrollPeriodId: { in: automatedPayrollPeriodIds },
+        },
       });
       await prisma.payrollPeriod.deleteMany({
         where: { companyId, id: { in: automatedPayrollPeriodIds } },
@@ -238,7 +247,8 @@ async function main() {
   const automatedLeaveTypeIds = automatedLeaveTypes
     .filter(
       (leaveType) =>
-        /^Annual Leave \d+$/.test(leaveType.name) && /^AL\d+$/.test(leaveType.code),
+        /^Annual Leave \d+$/.test(leaveType.name) &&
+        /^AL\d+$/.test(leaveType.code),
     )
     .map((leaveType) => leaveType.id);
   if (automatedLeaveTypeIds.length > 0) {
@@ -525,7 +535,13 @@ async function main() {
   for (const [name, key, startTime, endTime, graceMinutes] of shiftData) {
     await prisma.shift.upsert({
       where: { companyId_name: { companyId, name } },
-      update: { startTime, endTime, graceMinutes, status: 'ACTIVE', deletedAt: null },
+      update: {
+        startTime,
+        endTime,
+        graceMinutes,
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
       create: {
         id: stableId('shift', key),
         companyId,
@@ -539,7 +555,11 @@ async function main() {
   }
 
   const attendanceOffsets = [-6, -5, -4, -3, -2, -1, 0];
-  for (let employeeIndex = 0; employeeIndex < employees.length; employeeIndex += 1) {
+  for (
+    let employeeIndex = 0;
+    employeeIndex < employees.length;
+    employeeIndex += 1
+  ) {
     const employee = employees[employeeIndex];
     for (const offset of attendanceOffsets) {
       const variant = (employeeIndex + offset + 14) % 12;
@@ -556,10 +576,31 @@ async function main() {
       const isAbsent = status === 'ABSENT';
       const isHalfDay = status === 'HALF_DAY';
       const isLate = status === 'LATE';
-      const shiftKey = employeeIndex % 9 === 0 ? 'early' : employeeIndex % 7 === 0 ? 'evening' : 'general';
-      const checkInHour = shiftKey === 'early' ? 7 : shiftKey === 'evening' ? 13 : isLate ? 10 : 9;
-      const checkOutHour = isHalfDay ? checkInHour + 4 : shiftKey === 'early' ? 16 : shiftKey === 'evening' ? 22 : 18;
-      const recordKey = offset === 0 ? employee.employeeCode : `${employee.employeeCode}:${offset}`;
+      const shiftKey =
+        employeeIndex % 9 === 0
+          ? 'early'
+          : employeeIndex % 7 === 0
+            ? 'evening'
+            : 'general';
+      const checkInHour =
+        shiftKey === 'early'
+          ? 7
+          : shiftKey === 'evening'
+            ? 13
+            : isLate
+              ? 10
+              : 9;
+      const checkOutHour = isHalfDay
+        ? checkInHour + 4
+        : shiftKey === 'early'
+          ? 16
+          : shiftKey === 'evening'
+            ? 22
+            : 18;
+      const recordKey =
+        offset === 0
+          ? employee.employeeCode
+          : `${employee.employeeCode}:${offset}`;
       const attendanceId = stableId('attendance', recordKey);
 
       await prisma.attendanceRecord.upsert({
@@ -569,12 +610,15 @@ async function main() {
           shiftId: stableId('shift', shiftKey),
           date: day(offset, 12),
           checkInAt: isAbsent ? null : day(offset, checkInHour, isLate ? 2 : 0),
-          checkOutAt: isAbsent || offset === 0 ? null : day(offset, checkOutHour, 5),
+          checkOutAt:
+            isAbsent || offset === 0 ? null : day(offset, checkOutHour, 5),
           status,
           source: status === 'WORK_FROM_HOME' ? 'SELF' : 'BIOMETRIC',
           lateMinutes: isLate ? 22 : 0,
           location: status === 'WORK_FROM_HOME' ? 'Remote' : 'Office',
-          notes: isAbsent ? 'Approved absence recorded by People Operations' : null,
+          notes: isAbsent
+            ? 'Approved absence recorded by People Operations'
+            : null,
           deletedAt: null,
         },
         create: {
@@ -584,12 +628,15 @@ async function main() {
           shiftId: stableId('shift', shiftKey),
           date: day(offset, 12),
           checkInAt: isAbsent ? null : day(offset, checkInHour, isLate ? 2 : 0),
-          checkOutAt: isAbsent || offset === 0 ? null : day(offset, checkOutHour, 5),
+          checkOutAt:
+            isAbsent || offset === 0 ? null : day(offset, checkOutHour, 5),
           status,
           source: status === 'WORK_FROM_HOME' ? 'SELF' : 'BIOMETRIC',
           lateMinutes: isLate ? 22 : 0,
           location: status === 'WORK_FROM_HOME' ? 'Remote' : 'Office',
-          notes: isAbsent ? 'Approved absence recorded by People Operations' : undefined,
+          notes: isAbsent
+            ? 'Approved absence recorded by People Operations'
+            : undefined,
           createdById: admin.id,
         },
       });
@@ -598,13 +645,24 @@ async function main() {
 
   const holidayData = [
     ['Founders Day', 14, 'Annual company foundation celebration', true],
-    ['Regional Festival Holiday', 31, 'Office holiday across all branches', false],
+    [
+      'Regional Festival Holiday',
+      31,
+      'Office holiday across all branches',
+      false,
+    ],
     ['Year-end Break', 62, 'Company-wide year-end holiday', true],
   ] as const;
   for (const [name, offset, description, recurring] of holidayData) {
     await prisma.holiday.upsert({
       where: { id: stableId('holiday', name) },
-      update: { date: day(offset, 12), description, recurring, status: 'ACTIVE', deletedAt: null },
+      update: {
+        date: day(offset, 12),
+        description,
+        recurring,
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
       create: {
         id: stableId('holiday', name),
         companyId,
@@ -636,7 +694,8 @@ async function main() {
       requestedCheckInAt: day(-3, 9, 0),
       requestedCheckOutAt: day(-3, 18, 0),
       requestedStatus: 'WORK_FROM_HOME' as const,
-      reason: 'Approved remote-work day was initially marked as office attendance.',
+      reason:
+        'Approved remote-work day was initially marked as office attendance.',
       status: 'APPROVED' as const,
       reviewComment: 'Approved against the manager remote-work confirmation.',
     },
@@ -649,13 +708,15 @@ async function main() {
       requestedStatus: 'PRESENT' as const,
       reason: 'Requested removal of late status after the grace period.',
       status: 'REJECTED' as const,
-      reviewComment: 'Access-control logs confirm arrival after the grace period.',
+      reviewComment:
+        'Access-control logs confirm arrival after the grace period.',
     },
   ];
   for (const item of correctionData) {
-    const attendanceKey = item.attendanceOffset === 0
-      ? item.employee.employeeCode
-      : `${item.employee.employeeCode}:${item.attendanceOffset}`;
+    const attendanceKey =
+      item.attendanceOffset === 0
+        ? item.employee.employeeCode
+        : `${item.employee.employeeCode}:${item.attendanceOffset}`;
     await prisma.attendanceCorrectionRequest.upsert({
       where: { id: stableId('attendance-correction', item.key) },
       update: {
@@ -697,7 +758,13 @@ async function main() {
     ['Earned Leave', 'EL', 18, true, true],
     ['Unpaid Leave', 'UL', 0, true, false],
   ] as const;
-  for (const [name, code, annualAllowance, requiresApproval, paid] of leaveTypeData) {
+  for (const [
+    name,
+    code,
+    annualAllowance,
+    requiresApproval,
+    paid,
+  ] of leaveTypeData) {
     await prisma.leaveType.upsert({
       where: { companyId_code: { companyId, code } },
       update: {
@@ -723,15 +790,96 @@ async function main() {
   }
 
   const leaveRequestData = [
-    { key: 'casual-family-event', employee: employees[0], type: 'CL', from: 7, to: 8, status: 'PENDING' as const, reason: 'Family ceremony outside Bengaluru.', reviewComment: null },
-    { key: 'sick-medical-review', employee: employees[1], type: 'SL', from: 12, to: 12, status: 'PENDING' as const, reason: 'Scheduled medical review appointment.', reviewComment: null },
-    { key: 'earned-travel', employee: employees[2], type: 'EL', from: 20, to: 22, status: 'APPROVED' as const, reason: 'Planned personal travel with delivery coverage arranged.', reviewComment: 'Approved after confirming sprint handover.' },
-    { key: 'casual-school-event', employee: employees[3], type: 'CL', from: 15, to: 15, status: 'APPROVED' as const, reason: 'Attend a child school event.', reviewComment: 'Approved with team coverage confirmed.' },
-    { key: 'sick-recovery', employee: employees[4], type: 'SL', from: 9, to: 9, status: 'REJECTED' as const, reason: 'Recovery day following a routine procedure.', reviewComment: 'Please resubmit with the corrected appointment date.' },
-    { key: 'casual-cancelled-trip', employee: employees[5], type: 'CL', from: 18, to: 19, status: 'CANCELLED' as const, reason: 'Personal trip that was later cancelled.', reviewComment: null },
-    { key: 'unpaid-course', employee: employees[6], type: 'UL', from: 25, to: 25, status: 'APPROVED' as const, reason: 'Professional certification examination.', reviewComment: 'Approved as unpaid leave.' },
-    { key: 'earned-home-move', employee: employees[7], type: 'EL', from: 28, to: 29, status: 'REJECTED' as const, reason: 'House move and utility handover.', reviewComment: 'Delivery milestone requires revised dates.' },
-    { key: 'sick-recent-recovery', employee: employees[8], type: 'SL', from: -5, to: -4, status: 'APPROVED' as const, reason: 'Doctor-advised recovery after a seasonal illness.', reviewComment: 'Approved against the submitted medical note.' },
+    {
+      key: 'casual-family-event',
+      employee: employees[0],
+      type: 'CL',
+      from: 7,
+      to: 8,
+      status: 'PENDING' as const,
+      reason: 'Family ceremony outside Bengaluru.',
+      reviewComment: null,
+    },
+    {
+      key: 'sick-medical-review',
+      employee: employees[1],
+      type: 'SL',
+      from: 12,
+      to: 12,
+      status: 'PENDING' as const,
+      reason: 'Scheduled medical review appointment.',
+      reviewComment: null,
+    },
+    {
+      key: 'earned-travel',
+      employee: employees[2],
+      type: 'EL',
+      from: 20,
+      to: 22,
+      status: 'APPROVED' as const,
+      reason: 'Planned personal travel with delivery coverage arranged.',
+      reviewComment: 'Approved after confirming sprint handover.',
+    },
+    {
+      key: 'casual-school-event',
+      employee: employees[3],
+      type: 'CL',
+      from: 15,
+      to: 15,
+      status: 'APPROVED' as const,
+      reason: 'Attend a child school event.',
+      reviewComment: 'Approved with team coverage confirmed.',
+    },
+    {
+      key: 'sick-recovery',
+      employee: employees[4],
+      type: 'SL',
+      from: 9,
+      to: 9,
+      status: 'REJECTED' as const,
+      reason: 'Recovery day following a routine procedure.',
+      reviewComment: 'Please resubmit with the corrected appointment date.',
+    },
+    {
+      key: 'casual-cancelled-trip',
+      employee: employees[5],
+      type: 'CL',
+      from: 18,
+      to: 19,
+      status: 'CANCELLED' as const,
+      reason: 'Personal trip that was later cancelled.',
+      reviewComment: null,
+    },
+    {
+      key: 'unpaid-course',
+      employee: employees[6],
+      type: 'UL',
+      from: 25,
+      to: 25,
+      status: 'APPROVED' as const,
+      reason: 'Professional certification examination.',
+      reviewComment: 'Approved as unpaid leave.',
+    },
+    {
+      key: 'earned-home-move',
+      employee: employees[7],
+      type: 'EL',
+      from: 28,
+      to: 29,
+      status: 'REJECTED' as const,
+      reason: 'House move and utility handover.',
+      reviewComment: 'Delivery milestone requires revised dates.',
+    },
+    {
+      key: 'sick-recent-recovery',
+      employee: employees[8],
+      type: 'SL',
+      from: -5,
+      to: -4,
+      status: 'APPROVED' as const,
+      reason: 'Doctor-advised recovery after a seasonal illness.',
+      reviewComment: 'Approved against the submitted medical note.',
+    },
   ];
 
   const approvedUsage = new Map<string, number>();
@@ -743,7 +891,11 @@ async function main() {
   }
 
   const leaveYear = referenceDate.getFullYear();
-  for (let employeeIndex = 0; employeeIndex < employees.length; employeeIndex += 1) {
+  for (
+    let employeeIndex = 0;
+    employeeIndex < employees.length;
+    employeeIndex += 1
+  ) {
     const employee = employees[employeeIndex];
     for (const [, code, annualAllowance] of leaveTypeData) {
       const accrued = code === 'UL' ? 0 : employeeIndex % 3;
@@ -766,7 +918,10 @@ async function main() {
           updatedById: admin.id,
         },
         create: {
-          id: stableId('leave-balance', `${employee.employeeCode}:${code}:${leaveYear}`),
+          id: stableId(
+            'leave-balance',
+            `${employee.employeeCode}:${code}:${leaveYear}`,
+          ),
           companyId,
           employeeId: employee.id,
           leaveTypeId: stableId('leave-type', code),
@@ -793,8 +948,14 @@ async function main() {
         days,
         reason: request.reason,
         status: request.status,
-        reviewedById: request.status === 'PENDING' || request.status === 'CANCELLED' ? null : admin.id,
-        reviewedAt: request.status === 'PENDING' || request.status === 'CANCELLED' ? null : day(-1, 15),
+        reviewedById:
+          request.status === 'PENDING' || request.status === 'CANCELLED'
+            ? null
+            : admin.id,
+        reviewedAt:
+          request.status === 'PENDING' || request.status === 'CANCELLED'
+            ? null
+            : day(-1, 15),
         reviewComment: request.reviewComment,
         deletedAt: null,
         updatedById: admin.id,
@@ -809,8 +970,14 @@ async function main() {
         days,
         reason: request.reason,
         status: request.status,
-        reviewedById: request.status === 'PENDING' || request.status === 'CANCELLED' ? undefined : admin.id,
-        reviewedAt: request.status === 'PENDING' || request.status === 'CANCELLED' ? undefined : day(-1, 15),
+        reviewedById:
+          request.status === 'PENDING' || request.status === 'CANCELLED'
+            ? undefined
+            : admin.id,
+        reviewedAt:
+          request.status === 'PENDING' || request.status === 'CANCELLED'
+            ? undefined
+            : day(-1, 15),
         reviewComment: request.reviewComment ?? undefined,
         createdById: admin.id,
         updatedById: request.status === 'PENDING' ? undefined : admin.id,
@@ -875,12 +1042,24 @@ async function main() {
         createdById: admin.id,
       },
     });
-    for (const [name, code, type, calculationType, amount] of structure.components) {
+    for (const [
+      name,
+      code,
+      type,
+      calculationType,
+      amount,
+    ] of structure.components) {
       await prisma.salaryStructureComponent.upsert({
         where: {
           salaryStructureId_code: { salaryStructureId, code },
         },
-        update: { name, type, calculationType, amount, taxable: type === 'EARNING' },
+        update: {
+          name,
+          type,
+          calculationType,
+          amount,
+          taxable: type === 'EARNING',
+        },
         create: {
           id: stableId('salary-component', `${structure.key}:${code}`),
           companyId,
@@ -896,18 +1075,26 @@ async function main() {
     }
   }
 
-  const assignmentByEmployee = new Map<string, {
-    id: string;
-    monthlyGross: Prisma.Decimal;
-    structureKey: string;
-  }>();
-  for (let employeeIndex = 0; employeeIndex < employees.length; employeeIndex += 1) {
+  const assignmentByEmployee = new Map<
+    string,
+    {
+      id: string;
+      monthlyGross: Prisma.Decimal;
+      structureKey: string;
+    }
+  >();
+  for (
+    let employeeIndex = 0;
+    employeeIndex < employees.length;
+    employeeIndex += 1
+  ) {
     const employee = employees[employeeIndex];
-    const structureKey = employee.departmentId === stableId('department', 'Sales')
-      ? 'sales'
-      : employee.departmentId === stableId('department', 'Management')
-        ? 'management'
-        : 'staff';
+    const structureKey =
+      employee.departmentId === stableId('department', 'Sales')
+        ? 'sales'
+        : employee.departmentId === stableId('department', 'Management')
+          ? 'management'
+          : 'staff';
     const assignmentId = stableId('salary-assignment', employee.employeeCode);
     const monthlyGross = new Prisma.Decimal(42000 + employeeIndex * 2500);
     await prisma.employeeSalaryAssignment.upsert({
@@ -932,7 +1119,11 @@ async function main() {
         createdById: admin.id,
       },
     });
-    assignmentByEmployee.set(employee.id, { id: assignmentId, monthlyGross, structureKey });
+    assignmentByEmployee.set(employee.id, {
+      id: assignmentId,
+      monthlyGross,
+      structureKey,
+    });
   }
 
   const advanceData = [
@@ -944,7 +1135,8 @@ async function main() {
       paidAmount: 2000,
       balanceAmount: 10000,
       status: 'ACTIVE' as const,
-      notes: 'Relocation support recovered through scheduled payroll installments.',
+      notes:
+        'Relocation support recovered through scheduled payroll installments.',
     },
     {
       key: 'equipment-settled',
@@ -1008,7 +1200,8 @@ async function main() {
       endDate: day(-4, 12),
       payDate: day(-3, 12),
       runStatus: 'PAID' as const,
-      notes: 'Closed demo cycle with published payslips and posted advance recovery.',
+      notes:
+        'Closed demo cycle with published payslips and posted advance recovery.',
     },
     {
       key: 'current-cycle',
@@ -1105,13 +1298,25 @@ async function main() {
         (payrollPeriod.endDate.getTime() - payrollPeriod.startDate.getTime()) /
           86_400_000,
       ) + 1;
-    const runTotals = { gross: [] as number[], deductions: [] as number[], net: [] as number[] };
+    const runTotals = {
+      gross: [] as number[],
+      deductions: [] as number[],
+      net: [] as number[],
+    };
 
     for (const employee of employees) {
       const assignment = assignmentByEmployee.get(employee.id);
-      if (!assignment) throw new Error(`Missing demo salary assignment for ${employee.employeeCode}`);
-      const structure = payrollStructureData.find((item) => item.key === assignment.structureKey);
-      if (!structure) throw new Error(`Missing demo salary structure ${assignment.structureKey}`);
+      if (!assignment)
+        throw new Error(
+          `Missing demo salary assignment for ${employee.employeeCode}`,
+        );
+      const structure = payrollStructureData.find(
+        (item) => item.key === assignment.structureKey,
+      );
+      if (!structure)
+        throw new Error(
+          `Missing demo salary structure ${assignment.structureKey}`,
+        );
       const daySummary = summarizeDemoPayrollDays(
         payrollPeriod.startDate,
         payrollPeriod.endDate,
@@ -1119,38 +1324,52 @@ async function main() {
         periodHolidays,
         periodLeaves.filter((request) => request.employeeId === employee.id),
       );
-      const earningComponents = structure.components.filter((component) => component[2] === 'EARNING');
-      const deductionComponents = structure.components.filter((component) => component[2] === 'DEDUCTION');
-      const earnings = earningComponents.map(([name, code, , calculationType, amount]) => {
-        const calculated = prorateMoney(
-          componentFullAmount(assignment.monthlyGross, { calculationType, amount }),
-          daySummary.payableDays,
-          workingDays,
-        );
-        return {
-          kind: 'STRUCTURE',
-          name,
-          code,
-          calculationType,
-          configuredValue: amount,
-          amount: moneyNumber(calculated),
-        };
-      });
-      const structureDeductions = deductionComponents.map(([name, code, , calculationType, amount]) => {
-        const calculated = prorateMoney(
-          componentFullAmount(assignment.monthlyGross, { calculationType, amount }),
-          daySummary.payableDays,
-          workingDays,
-        );
-        return {
-          kind: 'STRUCTURE',
-          name,
-          code,
-          calculationType,
-          configuredValue: amount,
-          amount: moneyNumber(calculated),
-        };
-      });
+      const earningComponents = structure.components.filter(
+        (component) => component[2] === 'EARNING',
+      );
+      const deductionComponents = structure.components.filter(
+        (component) => component[2] === 'DEDUCTION',
+      );
+      const earnings = earningComponents.map(
+        ([name, code, , calculationType, amount]) => {
+          const calculated = prorateMoney(
+            componentFullAmount(assignment.monthlyGross, {
+              calculationType,
+              amount,
+            }),
+            daySummary.payableDays,
+            workingDays,
+          );
+          return {
+            kind: 'STRUCTURE',
+            name,
+            code,
+            calculationType,
+            configuredValue: amount,
+            amount: moneyNumber(calculated),
+          };
+        },
+      );
+      const structureDeductions = deductionComponents.map(
+        ([name, code, , calculationType, amount]) => {
+          const calculated = prorateMoney(
+            componentFullAmount(assignment.monthlyGross, {
+              calculationType,
+              amount,
+            }),
+            daySummary.payableDays,
+            workingDays,
+          );
+          return {
+            kind: 'STRUCTURE',
+            name,
+            code,
+            calculationType,
+            configuredValue: amount,
+            amount: moneyNumber(calculated),
+          };
+        },
+      );
       const advanceDeductions: Array<{
         kind: 'ADVANCE';
         name: string;
@@ -1158,26 +1377,69 @@ async function main() {
         advanceId: string;
         amount: number;
       }> = [];
-      if (payrollPeriod.key === 'closed-cycle' && employee.id === employees[0].id) {
-        advanceDeductions.push({ kind: 'ADVANCE', name: 'Salary advance', code: 'ADVANCE', advanceId: stableId('salary-advance', 'leadership-relocation'), amount: 2000 });
+      if (
+        payrollPeriod.key === 'closed-cycle' &&
+        employee.id === employees[0].id
+      ) {
+        advanceDeductions.push({
+          kind: 'ADVANCE',
+          name: 'Salary advance',
+          code: 'ADVANCE',
+          advanceId: stableId('salary-advance', 'leadership-relocation'),
+          amount: 2000,
+        });
       }
-      if (payrollPeriod.key === 'closed-cycle' && employee.id === employees[1].id) {
-        advanceDeductions.push({ kind: 'ADVANCE', name: 'Salary advance', code: 'ADVANCE', advanceId: stableId('salary-advance', 'equipment-settled'), amount: 2500 });
+      if (
+        payrollPeriod.key === 'closed-cycle' &&
+        employee.id === employees[1].id
+      ) {
+        advanceDeductions.push({
+          kind: 'ADVANCE',
+          name: 'Salary advance',
+          code: 'ADVANCE',
+          advanceId: stableId('salary-advance', 'equipment-settled'),
+          amount: 2500,
+        });
       }
-      if (payrollPeriod.key === 'current-cycle' && employee.id === employees[0].id) {
-        advanceDeductions.push({ kind: 'ADVANCE', name: 'Salary advance', code: 'ADVANCE', advanceId: stableId('salary-advance', 'leadership-relocation'), amount: 2000 });
+      if (
+        payrollPeriod.key === 'current-cycle' &&
+        employee.id === employees[0].id
+      ) {
+        advanceDeductions.push({
+          kind: 'ADVANCE',
+          name: 'Salary advance',
+          code: 'ADVANCE',
+          advanceId: stableId('salary-advance', 'leadership-relocation'),
+          amount: 2000,
+        });
       }
-      if (payrollPeriod.key === 'current-cycle' && employee.id === employees[2].id) {
-        advanceDeductions.push({ kind: 'ADVANCE', name: 'Salary advance', code: 'ADVANCE', advanceId: stableId('salary-advance', 'certification-active'), amount: 3000 });
+      if (
+        payrollPeriod.key === 'current-cycle' &&
+        employee.id === employees[2].id
+      ) {
+        advanceDeductions.push({
+          kind: 'ADVANCE',
+          name: 'Salary advance',
+          code: 'ADVANCE',
+          advanceId: stableId('salary-advance', 'certification-active'),
+          amount: 3000,
+        });
       }
-      const grossEarnings = sumMoney(earnings.map((component) => component.amount));
-      const advanceDeduction = sumMoney(advanceDeductions.map((deduction) => deduction.amount));
+      const grossEarnings = sumMoney(
+        earnings.map((component) => component.amount),
+      );
+      const advanceDeduction = sumMoney(
+        advanceDeductions.map((deduction) => deduction.amount),
+      );
       const totalDeductions = sumMoney([
         ...structureDeductions.map((component) => component.amount),
         advanceDeduction,
       ]);
       const netPay = roundMoney(grossEarnings.minus(totalDeductions));
-      const lineItemId = stableId('payroll-line', `${payrollPeriod.key}:${employee.employeeCode}`);
+      const lineItemId = stableId(
+        'payroll-line',
+        `${payrollPeriod.key}:${employee.employeeCode}`,
+      );
       const lineData = {
         companyId,
         payrollRunId,
@@ -1201,13 +1463,19 @@ async function main() {
       });
       const payslipNumber = `ZM-${payrollPeriod.key === 'closed-cycle' ? 'CLOSED' : 'CURRENT'}-${employee.employeeCode}`;
       await prisma.payslip.upsert({
-        where: { id: stableId('payslip', `${payrollPeriod.key}:${employee.employeeCode}`) },
+        where: {
+          id: stableId(
+            'payslip',
+            `${payrollPeriod.key}:${employee.employeeCode}`,
+          ),
+        },
         update: {
           payrollRunId,
           payrollLineItemId: lineItemId,
           employeeId: employee.id,
           payslipNumber,
-          status: payrollPeriod.runStatus === 'PAID' ? 'PUBLISHED' : 'GENERATED',
+          status:
+            payrollPeriod.runStatus === 'PAID' ? 'PUBLISHED' : 'GENERATED',
           generatedAt: payrollPeriod.endDate,
           fileName: null,
           storageKey: null,
@@ -1217,13 +1485,17 @@ async function main() {
           },
         },
         create: {
-          id: stableId('payslip', `${payrollPeriod.key}:${employee.employeeCode}`),
+          id: stableId(
+            'payslip',
+            `${payrollPeriod.key}:${employee.employeeCode}`,
+          ),
           companyId,
           payrollRunId,
           payrollLineItemId: lineItemId,
           employeeId: employee.id,
           payslipNumber,
-          status: payrollPeriod.runStatus === 'PAID' ? 'PUBLISHED' : 'GENERATED',
+          status:
+            payrollPeriod.runStatus === 'PAID' ? 'PUBLISHED' : 'GENERATED',
           generatedAt: payrollPeriod.endDate,
           metadata: {
             periodName: payrollPeriod.name,
@@ -1244,7 +1516,8 @@ async function main() {
         totalNet: sumMoney(runTotals.net),
         processedAt: payrollPeriod.endDate,
         approvedAt: payrollPeriod.endDate,
-        paidAt: payrollPeriod.runStatus === 'PAID' ? payrollPeriod.payDate : null,
+        paidAt:
+          payrollPeriod.runStatus === 'PAID' ? payrollPeriod.payDate : null,
         cancelledAt: null,
       },
     });
@@ -2410,16 +2683,36 @@ async function main() {
     attendanceCorrections: await prisma.attendanceCorrectionRequest.count({
       where: { companyId },
     }),
-    holidays: await prisma.holiday.count({ where: { companyId, deletedAt: null } }),
-    leaveTypes: await prisma.leaveType.count({ where: { companyId, deletedAt: null } }),
-    leaveBalances: await prisma.leaveBalance.count({ where: { companyId, year: referenceDate.getFullYear() } }),
-    leaveRequests: await prisma.leaveRequest.count({ where: { companyId, deletedAt: null } }),
-    salaryStructures: await prisma.salaryStructure.count({ where: { companyId, deletedAt: null } }),
-    salaryAssignments: await prisma.employeeSalaryAssignment.count({ where: { companyId, deletedAt: null } }),
-    salaryAdvances: await prisma.salaryAdvance.count({ where: { companyId, deletedAt: null } }),
-    payrollPeriods: await prisma.payrollPeriod.count({ where: { companyId, deletedAt: null } }),
-    payrollRuns: await prisma.payrollRun.count({ where: { companyId, deletedAt: null } }),
-    payrollLineItems: await prisma.payrollEmployeeLineItem.count({ where: { companyId } }),
+    holidays: await prisma.holiday.count({
+      where: { companyId, deletedAt: null },
+    }),
+    leaveTypes: await prisma.leaveType.count({
+      where: { companyId, deletedAt: null },
+    }),
+    leaveBalances: await prisma.leaveBalance.count({
+      where: { companyId, year: referenceDate.getFullYear() },
+    }),
+    leaveRequests: await prisma.leaveRequest.count({
+      where: { companyId, deletedAt: null },
+    }),
+    salaryStructures: await prisma.salaryStructure.count({
+      where: { companyId, deletedAt: null },
+    }),
+    salaryAssignments: await prisma.employeeSalaryAssignment.count({
+      where: { companyId, deletedAt: null },
+    }),
+    salaryAdvances: await prisma.salaryAdvance.count({
+      where: { companyId, deletedAt: null },
+    }),
+    payrollPeriods: await prisma.payrollPeriod.count({
+      where: { companyId, deletedAt: null },
+    }),
+    payrollRuns: await prisma.payrollRun.count({
+      where: { companyId, deletedAt: null },
+    }),
+    payrollLineItems: await prisma.payrollEmployeeLineItem.count({
+      where: { companyId },
+    }),
     payslips: await prisma.payslip.count({ where: { companyId } }),
     clients: await prisma.client.count({
       where: { companyId, deletedAt: null },
@@ -2469,10 +2762,6 @@ async function main() {
   console.log(JSON.stringify({ company: company.name, counts }, null, 2));
 }
 
-main()
-  .then(async () => prisma.$disconnect())
-  .catch(async (error: unknown) => {
-    console.error(error);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+export async function disconnectDemoSeed() {
+  await prisma.$disconnect();
+}

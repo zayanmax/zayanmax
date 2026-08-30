@@ -23,6 +23,7 @@
     "prisma:seed": "ts-node prisma/run-development-seed.ts",
     "prisma:seed:dev": "ts-node prisma/run-development-seed.ts",
     "prisma:seed:demo": "ts-node prisma/run-demo-seed.ts",
+    "prisma:cleanup:demo": "ts-node prisma/cleanup-demo.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

@@ -89,6 +89,8 @@ no public networking for application traffic.
 - Production initial company/admin creation is a separate manual transactional
   bootstrap with no default identity or password.
 - Demo/Staging may manually opt into the known development and demo seeds.
+- Demo data targets the configured administrator's company; the guarded cleanup
+  command resets company operational data while preserving sign-in and RBAC.
 
 ## Validation results
 

@@ -1,4 +1,5 @@
 import {
+  assertDemoCleanupAllowed,
   assertDemoSeedAllowed,
   assertDevelopmentSeedAllowed,
 } from './seed-safety';
@@ -27,6 +28,29 @@ describe('seed safety', () => {
       assertDemoSeedAllowed({
         NODE_ENV: 'production',
         ALLOW_DEMO_SEED: 'true',
+      }),
+    ).not.toThrow();
+  });
+
+  it('blocks demo cleanup without both production confirmations', () => {
+    expect(() => assertDemoCleanupAllowed({ NODE_ENV: 'production' })).toThrow(
+      'Demo cleanup is disabled in production',
+    );
+
+    expect(() =>
+      assertDemoCleanupAllowed({
+        NODE_ENV: 'production',
+        ALLOW_DEMO_CLEANUP: 'true',
+      }),
+    ).toThrow('Confirm demo cleanup');
+  });
+
+  it('allows demo cleanup only with the exact confirmation phrase', () => {
+    expect(() =>
+      assertDemoCleanupAllowed({
+        NODE_ENV: 'production',
+        ALLOW_DEMO_CLEANUP: 'true',
+        CONFIRM_DEMO_CLEANUP: 'DELETE_ZAYANMAX_DEMO_DATA',
       }),
     ).not.toThrow();
   });
