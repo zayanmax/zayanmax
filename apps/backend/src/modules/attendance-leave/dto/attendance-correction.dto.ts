@@ -5,6 +5,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { AttendanceStatusDto } from './attendance-status.dto';
 
 export enum AttendanceCorrectionStatusDto {
@@ -49,4 +50,22 @@ export class ReviewAttendanceCorrectionDto {
   @IsOptional()
   @IsString()
   reviewComment?: string;
+}
+
+export class AttendanceCorrectionQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsUUID()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsEnum(AttendanceCorrectionStatusDto)
+  declare status?: AttendanceCorrectionStatusDto;
+
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  fromDate?: string;
+
+  @IsOptional()
+  @IsISO8601({ strict: true })
+  toDate?: string;
 }

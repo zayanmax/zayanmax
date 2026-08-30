@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -20,6 +21,7 @@ import {
   AttendanceStatusDto,
 } from './dto/attendance-status.dto';
 import {
+  AttendanceCorrectionQueryDto,
   CreateAttendanceCorrectionDto,
   ReviewAttendanceCorrectionDto,
 } from './dto/attendance-correction.dto';
@@ -88,6 +90,9 @@ export class AttendanceLeaveService {
     userAgent?: string,
   ) {
     const date = this.toDateOnly(dto.date);
+    await this.ensureEmployeeInCompany(companyId, dto.employeeId);
+    await this.ensureShiftInCompany(companyId, dto.shiftId);
+    this.ensureValidTimeRange(dto.checkInAt, dto.checkOutAt);
     await this.ensureNoDuplicateAttendance(companyId, dto.employeeId, date);
     const attendance = await this.prisma.attendanceRecord.create({
       data: {
@@ -127,6 +132,8 @@ export class AttendanceLeaveService {
   ) {
     const date = this.toDateOnly(dto.date);
     const checkInAt = this.toDateTime(dto.checkInAt) ?? new Date();
+    await this.ensureEmployeeInCompany(companyId, dto.employeeId);
+    await this.ensureShiftInCompany(companyId, dto.shiftId);
     const existing = await this.findAttendanceByEmployeeDate(
       companyId,
       dto.employeeId,
@@ -135,6 +142,9 @@ export class AttendanceLeaveService {
 
     if (existing?.checkInAt) {
       throw new ConflictException('Attendance check-in already exists');
+    }
+    if (existing?.checkOutAt) {
+      this.ensureValidTimeRange(checkInAt, existing.checkOutAt);
     }
 
     const attendance = existing
@@ -187,6 +197,7 @@ export class AttendanceLeaveService {
     userAgent?: string,
   ) {
     const date = this.toDateOnly(dto.date);
+    await this.ensureEmployeeInCompany(companyId, dto.employeeId);
     const existing = await this.findAttendanceByEmployeeDate(
       companyId,
       dto.employeeId,
@@ -194,10 +205,13 @@ export class AttendanceLeaveService {
     );
     if (!existing) throw new NotFoundException('Attendance record not found');
 
+    const checkOutAt = this.toDateTime(dto.checkOutAt) ?? new Date();
+    this.ensureValidTimeRange(existing.checkInAt, checkOutAt);
+
     const attendance = await this.prisma.attendanceRecord.update({
       where: { id: existing.id },
       data: {
-        checkOutAt: this.toDateTime(dto.checkOutAt) ?? new Date(),
+        checkOutAt,
         notes: dto.notes ?? existing.notes,
         updatedById: actorId,
       },
@@ -321,6 +335,24 @@ export class AttendanceLeaveService {
     ipAddress?: string,
     userAgent?: string,
   ) {
+    await this.ensureEmployeeInCompany(companyId, dto.employeeId);
+    this.ensureValidTimeRange(
+      dto.requestedCheckInAt,
+      dto.requestedCheckOutAt,
+    );
+
+    if (dto.attendanceRecordId) {
+      const attendance = await this.findAttendanceRecordInCompany(
+        companyId,
+        dto.attendanceRecordId,
+      );
+      if (attendance.employeeId !== dto.employeeId) {
+        throw new BadRequestException(
+          'Attendance record does not belong to the selected employee',
+        );
+      }
+    }
+
     const correction = await this.prisma.attendanceCorrectionRequest.create({
       data: {
         companyId,
@@ -348,6 +380,88 @@ export class AttendanceLeaveService {
     return correction;
   }
 
+  async findCorrectionRequests(
+    companyId: string,
+    query: AttendanceCorrectionQueryDto,
+  ) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where: Prisma.AttendanceCorrectionRequestWhereInput = {
+      companyId,
+      ...(query.employeeId ? { employeeId: query.employeeId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      ...this.dateRangeWhere(query.fromDate, query.toDate),
+      ...(query.search
+        ? {
+            OR: [
+              { reason: { contains: query.search, mode: 'insensitive' } },
+              {
+                employee: {
+                  is: {
+                    OR: [
+                      {
+                        firstName: {
+                          contains: query.search,
+                          mode: 'insensitive',
+                        },
+                      },
+                      {
+                        lastName: {
+                          contains: query.search,
+                          mode: 'insensitive',
+                        },
+                      },
+                      {
+                        employeeCode: {
+                          contains: query.search,
+                          mode: 'insensitive',
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.attendanceCorrectionRequest.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { [query.sortBy ?? 'createdAt']: query.sortOrder ?? 'desc' },
+        include: {
+          employee: {
+            select: {
+              id: true,
+              employeeCode: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          attendanceRecord: {
+            select: {
+              id: true,
+              date: true,
+              checkInAt: true,
+              checkOutAt: true,
+              status: true,
+              source: true,
+            },
+          },
+        },
+      }),
+      this.prisma.attendanceCorrectionRequest.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
   async reviewCorrectionRequest(
     companyId: string,
     id: string,
@@ -368,6 +482,25 @@ export class AttendanceLeaveService {
       );
     }
 
+    let linkedAttendance:
+      | Awaited<ReturnType<typeof this.findAttendanceRecordInCompany>>
+      | undefined;
+    if (String(dto.status) === 'APPROVED' && oldValue.attendanceRecordId) {
+      linkedAttendance = await this.findAttendanceRecordInCompany(
+        companyId,
+        oldValue.attendanceRecordId,
+      );
+      if (linkedAttendance.employeeId !== oldValue.employeeId) {
+        throw new BadRequestException(
+          'Attendance record does not belong to the correction employee',
+        );
+      }
+      this.ensureValidTimeRange(
+        oldValue.requestedCheckInAt ?? linkedAttendance.checkInAt,
+        oldValue.requestedCheckOutAt ?? linkedAttendance.checkOutAt,
+      );
+    }
+
     const correction = await this.prisma.attendanceCorrectionRequest.update({
       where: { id },
       data: {
@@ -379,13 +512,19 @@ export class AttendanceLeaveService {
       },
     });
 
-    if (String(dto.status) === 'APPROVED' && oldValue.attendanceRecordId) {
+    if (linkedAttendance) {
       await this.prisma.attendanceRecord.update({
-        where: { id: oldValue.attendanceRecordId },
+        where: { id: linkedAttendance.id },
         data: {
-          checkInAt: oldValue.requestedCheckInAt,
-          checkOutAt: oldValue.requestedCheckOutAt,
-          status: oldValue.requestedStatus ?? undefined,
+          ...(oldValue.requestedCheckInAt
+            ? { checkInAt: oldValue.requestedCheckInAt }
+            : {}),
+          ...(oldValue.requestedCheckOutAt
+            ? { checkOutAt: oldValue.requestedCheckOutAt }
+            : {}),
+          ...(oldValue.requestedStatus
+            ? { status: oldValue.requestedStatus }
+            : {}),
           updatedById: actorId,
         },
       });
@@ -740,6 +879,56 @@ export class AttendanceLeaveService {
       throw new ConflictException(
         'Attendance already exists for employee date',
       );
+    }
+  }
+
+  private async ensureEmployeeInCompany(
+    companyId: string,
+    employeeId: string,
+  ) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, companyId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!employee) throw new NotFoundException('Employee not found');
+  }
+
+  private async ensureShiftInCompany(companyId: string, shiftId?: string) {
+    if (!shiftId) return;
+    const shift = await this.prisma.shift.findFirst({
+      where: { id: shiftId, companyId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!shift) throw new NotFoundException('Shift not found');
+  }
+
+  private async findAttendanceRecordInCompany(
+    companyId: string,
+    attendanceRecordId: string,
+  ) {
+    const attendance = await this.prisma.attendanceRecord.findFirst({
+      where: {
+        id: attendanceRecordId,
+        companyId,
+        deletedAt: null,
+      },
+    });
+    if (!attendance) {
+      throw new NotFoundException('Attendance record not found');
+    }
+    return attendance;
+  }
+
+  private ensureValidTimeRange(
+    checkIn?: string | Date | null,
+    checkOut?: string | Date | null,
+  ) {
+    if (!checkIn || !checkOut) return;
+    const checkInAt = checkIn instanceof Date ? checkIn : new Date(checkIn);
+    const checkOutAt =
+      checkOut instanceof Date ? checkOut : new Date(checkOut);
+    if (checkOutAt.getTime() < checkInAt.getTime()) {
+      throw new BadRequestException('Check-out cannot be before check-in');
     }
   }
 

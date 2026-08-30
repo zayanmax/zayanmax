@@ -29,6 +29,7 @@ import {
   MonthlySummaryQueryDto,
 } from './dto/attendance-query.dto';
 import {
+  AttendanceCorrectionQueryDto,
   CreateAttendanceCorrectionDto,
   ReviewAttendanceCorrectionDto,
 } from './dto/attendance-correction.dto';
@@ -139,6 +140,18 @@ export class AttendanceController {
       dto,
       ipAddress,
       request.headers['user-agent'],
+    );
+  }
+
+  @RequirePermissions('attendance.view')
+  @Get('corrections')
+  findCorrections(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Query() query: AttendanceCorrectionQueryDto,
+  ) {
+    return this.attendanceLeaveService.findCorrectionRequests(
+      user.companyId,
+      query,
     );
   }
 

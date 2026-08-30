@@ -1,11 +1,14 @@
 import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function ErrorState({
   title = "Something went wrong",
   message,
+  onRetry,
 }: {
   title?: string;
   message?: string;
+  onRetry?: () => void;
 }) {
   return (
     <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm">
@@ -14,6 +17,11 @@ export function ErrorState({
         <div>
           <p className="font-medium text-destructive">{title}</p>
           {message ? <p className="mt-1 text-muted-foreground">{message}</p> : null}
+          {onRetry ? (
+            <Button type="button" variant="outline" size="sm" className="mt-3" onClick={onRetry}>
+              Try again
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>
